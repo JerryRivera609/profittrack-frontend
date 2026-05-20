@@ -24,6 +24,7 @@ export type LoginResponse = {
 };
 
 type ApiRequestOptions = {
+  credentials?: RequestCredentials;
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   token?: string;
@@ -41,7 +42,7 @@ export class ApiRequestError extends Error {
 
 export async function apiRequest<T>(
   path: string,
-  { method = "GET", body, token }: ApiRequestOptions = {},
+  { credentials = "include", method = "GET", body, token }: ApiRequestOptions = {},
 ) {
   const headers = new Headers({
     accept: "*/*",
@@ -55,11 +56,27 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${token.trim()}`);
   }
 
+  console.log("[apiRequest]", {
+    authorizationHeader: headers.get("Authorization") ?? null,
+    body,
+    credentials,
+    method,
+    path: `${API_BASE_URL}${path}`,
+    tokenProvided: Boolean(token?.trim()),
+  });
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
     headers,
     method,
+    credentials: "include",
+  });
+
+  console.log("[apiResponse]", {
+    ok: response.ok,
+    path: `${API_BASE_URL}${path}`,
+    status: response.status,
   });
 
   const responseText = await response.text();

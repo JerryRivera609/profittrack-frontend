@@ -9,19 +9,25 @@ export const employeeService = {
   create: (payload: CreateEmployeePayload, token?: string) =>
     apiRequest<Employee>("/api/empleados", {
       body: payload,
+      credentials: "include",
       method: "POST",
       token,
     }),
   list: (token?: string) =>
-    apiRequest<Employee[]>("/api/empleados", { token }),
+    apiRequest<Employee[]>("/api/empleados", {
+      credentials: "omit",
+      token,
+    }),
   remove: (id: number, token?: string) =>
     apiRequest<void>(`/api/empleados/${id}`, {
+      credentials: "include",
       method: "DELETE",
       token,
     }),
   update: (id: number, payload: UpdateEmployeePayload, token?: string) =>
     apiRequest<Employee>(`/api/empleados/${id}`, {
       body: payload,
+      credentials: "include",
       method: "PATCH",
       token,
     }),
