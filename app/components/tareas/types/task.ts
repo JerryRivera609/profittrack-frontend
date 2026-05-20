@@ -3,9 +3,9 @@ import type { Session } from "../../../types/domain";
 export type Task = {
   id: number;
   proyectoId: number;
-  tipoTareaId: number;
+  tipoTareaId?: number | null;
   tipoTareaNombre: string;
-  empleadoAsignadoId: number;
+  empleadoAsignadoId?: number | null;
   empleadoNombre: string;
   nombre: string;
   descripcion: string;

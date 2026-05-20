@@ -42,8 +42,8 @@ export function createTaskFormValues(
 
   return {
     proyectoId: task.proyectoId.toString(),
-    tipoTareaId: task.tipoTareaId.toString(),
-    empleadoAsignadoId: task.empleadoAsignadoId.toString(),
+    tipoTareaId: normalizeId(task.tipoTareaId),
+    empleadoAsignadoId: normalizeId(task.empleadoAsignadoId),
     nombre: task.nombre,
     descripcion: task.descripcion,
     horasPlanificadas: task.horasPlanificadas.toString(),
@@ -96,4 +96,8 @@ export function buildUpdateTaskPayload(form: TaskFormValues): UpdateTaskPayload 
 
 function normalizeDate(value?: string | null) {
   return value?.slice(0, 10) ?? "";
+}
+
+function normalizeId(value?: number | null) {
+  return typeof value === "number" ? value.toString() : "";
 }
