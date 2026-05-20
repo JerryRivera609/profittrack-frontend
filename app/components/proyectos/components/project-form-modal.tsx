@@ -19,6 +19,7 @@ import type {
   ProjectScope,
 } from "../types/project";
 import { Button } from "../../ui/button";
+import { CalendarField } from "../../ui/calendar-field";
 import {
   Modal,
   ModalBody,
@@ -171,34 +172,42 @@ export function ProjectFormModal({
               required
               value={form.descripcion}
             />
-            <TextField
+            <CalendarField
               icon={<CalendarDays className="size-4" />}
+              helperText="Fecha prevista para iniciar el proyecto."
               label="Inicio planificado"
-              onChange={(event) => onChange("fechaInicioPlanificada", event.target.value)}
+              onChange={(selectedValue) =>
+                onChange("fechaInicioPlanificada", selectedValue)
+              }
+              placeholder="Selecciona el inicio planificado"
               required
-              type="date"
               value={form.fechaInicioPlanificada}
             />
-            <TextField
+            <CalendarField
               icon={<CalendarDays className="size-4" />}
+              helperText="Fecha prevista de cierre."
               label="Fin planificado"
-              onChange={(event) => onChange("fechaFinPlanificada", event.target.value)}
+              onChange={(selectedValue) =>
+                onChange("fechaFinPlanificada", selectedValue)
+              }
+              placeholder="Selecciona el fin planificado"
               required
-              type="date"
               value={form.fechaFinPlanificada}
             />
-            <TextField
+            <CalendarField
               icon={<CalendarDays className="size-4" />}
+              helperText="Opcional mientras el proyecto no haya arrancado."
               label="Inicio real"
-              onChange={(event) => onChange("fechaInicioReal", event.target.value)}
-              type="date"
+              onChange={(selectedValue) => onChange("fechaInicioReal", selectedValue)}
+              placeholder="Selecciona el inicio real"
               value={form.fechaInicioReal}
             />
-            <TextField
+            <CalendarField
               icon={<CalendarDays className="size-4" />}
+              helperText="Opcional mientras el proyecto siga abierto."
               label="Fin real"
-              onChange={(event) => onChange("fechaFinReal", event.target.value)}
-              type="date"
+              onChange={(selectedValue) => onChange("fechaFinReal", selectedValue)}
+              placeholder="Selecciona el fin real"
               value={form.fechaFinReal}
             />
             <TextField
