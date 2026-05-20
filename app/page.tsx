@@ -1,5 +1,5 @@
-import { ProfitTrackApp } from "./components/profittrack/profit-track-app";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <ProfitTrackApp />;
+  redirect("/login");
 }

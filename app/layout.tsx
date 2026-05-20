@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ProfitTrack",
-  description: "Dashboard demo de rentabilidad para ProfitTrack",
+  title: "ProfitTrack HH.HH",
+  description: "ERP ligero para empresas, proyectos, horas hombre y finanzas",
 };
 
 export default function RootLayout({
