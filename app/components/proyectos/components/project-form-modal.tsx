@@ -194,22 +194,6 @@ export function ProjectFormModal({
               required
               value={form.fechaFinPlanificada}
             />
-            <CalendarField
-              icon={<CalendarDays className="size-4" />}
-              helperText="Opcional mientras el proyecto no haya arrancado."
-              label="Inicio real"
-              onChange={(selectedValue) => onChange("fechaInicioReal", selectedValue)}
-              placeholder="Selecciona el inicio real"
-              value={form.fechaInicioReal}
-            />
-            <CalendarField
-              icon={<CalendarDays className="size-4" />}
-              helperText="Opcional mientras el proyecto siga abierto."
-              label="Fin real"
-              onChange={(selectedValue) => onChange("fechaFinReal", selectedValue)}
-              placeholder="Selecciona el fin real"
-              value={form.fechaFinReal}
-            />
             <TextField
               icon={<FolderKanban className="size-4" />}
               label="Horas planificadas"

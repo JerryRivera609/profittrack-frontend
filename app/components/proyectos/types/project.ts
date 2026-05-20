@@ -68,9 +68,7 @@ export type ProjectFormValues = {
   empresaId: string;
   estado: string;
   fechaFinPlanificada: string;
-  fechaFinReal: string;
   fechaInicioPlanificada: string;
-  fechaInicioReal: string;
   horasPlanificadas: string;
   liderEmpleadoId: string;
   margenPlanificado: string;
@@ -87,6 +85,8 @@ export type ProjectModalState = {
   open: boolean;
   project: Project | null;
 };
+
+export type ProjectLifecycleAction = "start" | "finish";
 
 export type ProjectStats = {
   label: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import { FolderKanban, Pencil, Trash2 } from "lucide-react";
-import type { Project } from "../types/project";
+import { Flag, FolderKanban, Pencil, Play, Trash2 } from "lucide-react";
+import type { Project, ProjectLifecycleAction } from "../types/project";
 import { formatProjectDate } from "../utils/project-format";
 import { Button } from "../../ui/button";
 import { EmptyState } from "../../ui/empty-state";
@@ -12,6 +12,7 @@ type ProjectListProps = {
   isLoading: boolean;
   onDelete: (project: Project) => void;
   onEdit: (project: Project) => void;
+  onLifecycleAction: (project: Project, action: ProjectLifecycleAction) => void;
   projects: Project[];
 };
 
@@ -20,6 +21,7 @@ export function ProjectList({
   isLoading,
   onDelete,
   onEdit,
+  onLifecycleAction,
   projects,
 }: ProjectListProps) {
   return (
@@ -92,6 +94,24 @@ export function ProjectList({
                     </td>
                     <td className="py-3 text-right">
                       <div className="flex justify-end gap-2">
+                        {!project.fechaInicioReal ? (
+                          <Button
+                            icon={<Play className="size-4" />}
+                            onClick={() => onLifecycleAction(project, "start")}
+                            variant="primary"
+                          >
+                            Iniciar
+                          </Button>
+                        ) : null}
+                        {project.fechaInicioReal && !project.fechaFinReal ? (
+                          <Button
+                            icon={<Flag className="size-4" />}
+                            onClick={() => onLifecycleAction(project, "finish")}
+                            variant="secondary"
+                          >
+                            Finalizar
+                          </Button>
+                        ) : null}
                         <Button
                           icon={<Pencil className="size-4" />}
                           onClick={() => onEdit(project)}

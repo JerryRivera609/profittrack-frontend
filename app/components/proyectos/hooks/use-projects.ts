@@ -11,10 +11,12 @@ import type {
   Project,
   ProjectCatalogOption,
   ProjectFormValues,
+  ProjectLifecycleAction,
   ProjectModalState,
 } from "../types/project";
 import {
   buildCreateProjectPayload,
+  buildProjectLifecyclePayload,
   buildUpdateProjectPayload,
   createProjectFormValues,
   createProjectScope,
@@ -42,6 +44,10 @@ export function useProjects(session: Session) {
   const [notice, setNotice] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [clientOptions, setClientOptions] = useState<ProjectCatalogOption[]>([]);
+  const [lifecycleTarget, setLifecycleTarget] = useState<{
+    action: ProjectLifecycleAction;
+    project: Project;
+  } | null>(null);
   const [leaderOptions, setLeaderOptions] = useState<ProjectCatalogOption[]>([]);
   const [serviceTypeOptions, setServiceTypeOptions] = useState<ProjectCatalogOption[]>([]);
 
@@ -167,6 +173,20 @@ export function useProjects(session: Session) {
     setNotice("");
   }
 
+  function openLifecycleModal(project: Project, action: ProjectLifecycleAction) {
+    setLifecycleTarget({ action, project });
+    setError("");
+    setNotice("");
+  }
+
+  function closeLifecycleModal() {
+    if (isSaving) {
+      return;
+    }
+
+    setLifecycleTarget(null);
+  }
+
   function closeDeleteModal() {
     if (isDeleting) {
       return;
@@ -236,9 +256,43 @@ export function useProjects(session: Session) {
     }
   }
 
+  async function confirmLifecycleAction() {
+    if (!lifecycleTarget) {
+      return;
+    }
+
+    setError("");
+    setNotice("");
+    setIsSaving(true);
+
+    try {
+      await projectService.update(
+        lifecycleTarget.project.id,
+        buildProjectLifecyclePayload(
+          lifecycleTarget.project,
+          lifecycleTarget.action,
+        ),
+        session.apiToken,
+      );
+      setNotice(
+        lifecycleTarget.action === "start"
+          ? "Proyecto iniciado."
+          : "Proyecto finalizado.",
+      );
+      setLifecycleTarget(null);
+      await loadProjects();
+    } catch (actionError) {
+      setError(getErrorMessage(actionError));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return {
     closeDeleteModal,
     closeFormModal,
+    closeLifecycleModal,
+    confirmLifecycleAction,
     confirmDelete,
     deleteTarget,
     error,
@@ -248,6 +302,7 @@ export function useProjects(session: Session) {
     isLoading,
     isSaving,
     clientOptions,
+    lifecycleTarget,
     leaderOptions,
     loadProjects,
     modalState,
@@ -255,6 +310,7 @@ export function useProjects(session: Session) {
     openCreateModal,
     openDeleteModal,
     openEditModal,
+    openLifecycleModal,
     projects: visibleProjects,
     serviceTypeOptions,
     scope,

@@ -18,6 +18,8 @@ export function ProjectManagement() {
   const {
     closeDeleteModal,
     closeFormModal,
+    closeLifecycleModal,
+    confirmLifecycleAction,
     confirmDelete,
     deleteTarget,
     error,
@@ -28,12 +30,14 @@ export function ProjectManagement() {
     isLoading,
     isSaving,
     leaderOptions,
+    lifecycleTarget,
     loadProjects,
     modalState,
     notice,
     openCreateModal,
     openDeleteModal,
     openEditModal,
+    openLifecycleModal,
     projects,
     serviceTypeOptions,
     scope,
@@ -85,6 +89,7 @@ export function ProjectManagement() {
             isLoading={isLoading}
             onDelete={openDeleteModal}
             onEdit={openEditModal}
+            onLifecycleAction={openLifecycleModal}
             projects={projects}
           />
         </div>
@@ -118,6 +123,32 @@ export function ProjectManagement() {
         onConfirm={() => void confirmDelete()}
         open={Boolean(deleteTarget)}
         title={deleteTarget ? `Eliminar ${deleteTarget.nombre}` : "Eliminar proyecto"}
+      />
+
+      <ConfirmModal
+        confirmLabel={
+          lifecycleTarget?.action === "start"
+            ? "Iniciar proyecto"
+            : "Finalizar proyecto"
+        }
+        description={
+          lifecycleTarget
+            ? lifecycleTarget.action === "start"
+              ? `Se registrara el inicio real de ${lifecycleTarget.project.nombre} con la fecha de hoy.`
+              : `Se registrara el cierre real de ${lifecycleTarget.project.nombre} con la fecha de hoy.`
+            : ""
+        }
+        isLoading={isSaving}
+        onClose={closeLifecycleModal}
+        onConfirm={() => void confirmLifecycleAction()}
+        open={Boolean(lifecycleTarget)}
+        title={
+          lifecycleTarget
+            ? lifecycleTarget.action === "start"
+              ? `Iniciar ${lifecycleTarget.project.nombre}`
+              : `Finalizar ${lifecycleTarget.project.nombre}`
+            : "Confirmar accion"
+        }
       />
     </>
   );

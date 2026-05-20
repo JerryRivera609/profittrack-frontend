@@ -1,6 +1,7 @@
 import type { Session } from "../../../types/domain";
 import type {
   CreateProjectPayload,
+  ProjectLifecycleAction,
   Project,
   ProjectFormValues,
   ProjectScope,
@@ -15,9 +16,7 @@ const emptyForm: ProjectFormValues = {
   empresaId: "",
   estado: "",
   fechaFinPlanificada: "",
-  fechaFinReal: "",
   fechaInicioPlanificada: "",
-  fechaInicioReal: "",
   horasPlanificadas: "",
   liderEmpleadoId: "",
   margenPlanificado: "",
@@ -53,9 +52,7 @@ export function createProjectFormValues(
     empresaId: project.empresaId.toString(),
     estado: project.estado ?? "",
     fechaFinPlanificada: normalizeDateInput(project.fechaFinPlanificada),
-    fechaFinReal: normalizeDateInput(project.fechaFinReal),
     fechaInicioPlanificada: normalizeDateInput(project.fechaInicioPlanificada),
-    fechaInicioReal: normalizeDateInput(project.fechaInicioReal),
     horasPlanificadas: project.horasPlanificadas.toString(),
     liderEmpleadoId: project.liderEmpleadoId.toString(),
     margenPlanificado: project.margenPlanificado.toString(),
@@ -101,7 +98,7 @@ export function buildCreateProjectPayload(
 export function buildUpdateProjectPayload(
   form: ProjectFormValues,
 ): UpdateProjectPayload {
-  const payload: UpdateProjectPayload = {
+  return {
     clienteId: Number.parseInt(form.clienteId, 10),
     codigo: form.codigo.trim(),
     descripcion: form.descripcion.trim(),
@@ -116,16 +113,37 @@ export function buildUpdateProjectPayload(
     precioVenta: Number.parseFloat(form.precioVenta),
     tipoServicioId: Number.parseInt(form.tipoServicioId, 10),
   };
+}
 
-  if (form.fechaInicioReal) {
-    payload.fechaInicioReal = form.fechaInicioReal;
-  }
+export function buildProjectLifecyclePayload(
+  project: Project,
+  action: ProjectLifecycleAction,
+): UpdateProjectPayload {
+  const today = new Date().toISOString().slice(0, 10);
 
-  if (form.fechaFinReal) {
-    payload.fechaFinReal = form.fechaFinReal;
-  }
-
-  return payload;
+  return {
+    clienteId: project.clienteId,
+    codigo: project.codigo,
+    descripcion: project.descripcion,
+    estado: action === "start" ? "En curso" : "Finalizado",
+    fechaFinPlanificada: normalizeDateInput(project.fechaFinPlanificada),
+    fechaFinReal:
+      action === "finish"
+        ? today
+        : normalizeDateInput(project.fechaFinReal) || undefined,
+    fechaInicioPlanificada: normalizeDateInput(project.fechaInicioPlanificada),
+    fechaInicioReal:
+      action === "start"
+        ? today
+        : normalizeDateInput(project.fechaInicioReal) || undefined,
+    horasPlanificadas: project.horasPlanificadas,
+    liderEmpleadoId: project.liderEmpleadoId,
+    margenPlanificado: project.margenPlanificado,
+    nombre: project.nombre,
+    presupuestoPlanificado: project.presupuestoPlanificado,
+    precioVenta: project.precioVenta,
+    tipoServicioId: project.tipoServicioId,
+  };
 }
 
 function normalizeDateInput(value?: string | null) {
