@@ -45,6 +45,9 @@ export class ApiRequestError extends Error {
   }
 }
 
+let refreshPromise: Promise<LoginResponse | undefined> | null = null;
+
+
 export async function apiRequest<T>(
   path: string,
   { credentials = "include", method = "GET", body, token }: ApiRequestOptions = {},
@@ -52,40 +55,48 @@ export async function apiRequest<T>(
   const headers = new Headers({
     accept: "*/*",
   });
-
   if (body !== undefined) {
     headers.set("Content-Type", "application/json");
   }
-
   if (token?.trim()) {
     headers.set("Authorization", `Bearer ${token.trim()}`);
   }
 
-  console.log("[apiRequest]", {
-    authorizationHeader: headers.get("Authorization") ?? null,
-    body,
-    credentials,
-    method,
-    path: `${API_BASE_URL}${path}`,
-    tokenProvided: Boolean(token?.trim()),
-  });
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  // primera call
+  let response = await fetch(`${API_BASE_URL}${path}`, {
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
     headers,
     method,
     credentials: "include",
   });
+  // catch de unautthoirzed
+  if (response.status === 401 && path !== "/api/auth/login" && path !== "/api/auth/refresh") {
+    console.log("[apiRequest] Token vencido (401). Intentando refresh silencioso...");
+    try {
+      if (!refreshPromise) {
+        refreshPromise = authApi.refresh();
+      }
 
-  console.log("[apiResponse]", {
-    ok: response.ok,
-    path: `${API_BASE_URL}${path}`,
-    status: response.status,
-  });
+      await refreshPromise;
+      refreshPromise = null;
+      // segunda call con el token actualizado
+      console.log("[apiRequest] Refresh exitoso. Reintentando petición original a:", path);
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        body: body === undefined ? undefined : JSON.stringify(body),
+        cache: "no-store",
+        headers,
+        method,
+        credentials: "include",
+      });
+    } catch (refreshError) {
+      refreshPromise = null;
+      console.error("[apiRequest] El refresh falló. Redirigiendo a login.", refreshError);
 
+      throw new ApiRequestError(401, "Sesión expirada");
+    }
+  }
   const responseText = await response.text();
-
   if (!response.ok) {
     const detail = responseText ? `: ${responseText}` : "";
     throw new ApiRequestError(
@@ -93,11 +104,9 @@ export async function apiRequest<T>(
       `La API respondio ${response.status}${detail}`,
     );
   }
-
   if (!responseText) {
     return undefined as T;
   }
-
   return JSON.parse(responseText) as T;
 }
 
