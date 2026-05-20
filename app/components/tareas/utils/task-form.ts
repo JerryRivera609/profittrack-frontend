@@ -3,6 +3,7 @@ import type {
   CreateTaskPayload,
   Task,
   TaskFormValues,
+  TaskLifecycleAction,
   TaskScope,
   UpdateTaskPayload,
 } from "../types/task";
@@ -16,8 +17,6 @@ const emptyForm: TaskFormValues = {
   horasPlanificadas: "",
   fechaInicioPlanificada: "",
   fechaFinPlanificada: "",
-  fechaInicioReal: "",
-  fechaFinReal: "",
   estado: "",
 };
 
@@ -49,8 +48,6 @@ export function createTaskFormValues(
     horasPlanificadas: task.horasPlanificadas.toString(),
     fechaInicioPlanificada: normalizeDate(task.fechaInicioPlanificada),
     fechaFinPlanificada: normalizeDate(task.fechaFinPlanificada),
-    fechaInicioReal: normalizeDate(task.fechaInicioReal),
-    fechaFinReal: normalizeDate(task.fechaFinReal),
     estado: task.estado ?? "",
   };
 }
@@ -88,9 +85,29 @@ export function buildUpdateTaskPayload(form: TaskFormValues): UpdateTaskPayload 
     horasPlanificadas: Number.parseFloat(form.horasPlanificadas),
     fechaInicioPlanificada: form.fechaInicioPlanificada,
     fechaFinPlanificada: form.fechaFinPlanificada,
-    fechaInicioReal: form.fechaInicioReal || undefined,
-    fechaFinReal: form.fechaFinReal || undefined,
     estado: form.estado.trim(),
+  };
+}
+
+export function buildTaskLifecyclePayload(
+  task: Task,
+  action: TaskLifecycleAction,
+): UpdateTaskPayload {
+  const today = new Date().toISOString().slice(0, 10);
+
+  return {
+    tipoTareaId: task.tipoTareaId ?? 0,
+    empleadoAsignadoId: task.empleadoAsignadoId ?? 0,
+    nombre: task.nombre,
+    descripcion: task.descripcion,
+    horasPlanificadas: task.horasPlanificadas,
+    fechaInicioPlanificada: normalizeDate(task.fechaInicioPlanificada),
+    fechaFinPlanificada: normalizeDate(task.fechaFinPlanificada),
+    fechaInicioReal:
+      action === "start" ? today : normalizeDate(task.fechaInicioReal) || undefined,
+    fechaFinReal:
+      action === "finish" ? today : normalizeDate(task.fechaFinReal) || undefined,
+    estado: action === "start" ? "En curso" : "Finalizada",
   };
 }
 

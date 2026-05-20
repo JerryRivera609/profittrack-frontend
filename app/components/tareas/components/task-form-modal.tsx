@@ -152,29 +152,13 @@ export function TaskFormModal({
               value={form.fechaFinPlanificada}
             />
             {isEdit ? (
-              <>
-                <CalendarField
-                  icon={<CalendarDays className="size-4" />}
-                  label="Inicio real"
-                  onChange={(selectedValue) => onChange("fechaInicioReal", selectedValue)}
-                  placeholder="Selecciona el inicio real"
-                  value={form.fechaInicioReal}
-                />
-                <CalendarField
-                  icon={<CalendarDays className="size-4" />}
-                  label="Fin real"
-                  onChange={(selectedValue) => onChange("fechaFinReal", selectedValue)}
-                  placeholder="Selecciona el fin real"
-                  value={form.fechaFinReal}
-                />
-                <TextField
-                  icon={<ClipboardCheck className="size-4" />}
-                  label="Estado"
-                  onChange={(event) => onChange("estado", event.target.value)}
-                  required
-                  value={form.estado}
-                />
-              </>
+              <TextField
+                icon={<ClipboardCheck className="size-4" />}
+                label="Estado"
+                onChange={(event) => onChange("estado", event.target.value)}
+                required
+                value={form.estado}
+              />
             ) : null}
           </div>
         </ModalBody>

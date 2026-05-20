@@ -10,9 +10,11 @@ import type {
   Task,
   TaskCatalogOption,
   TaskFormValues,
+  TaskLifecycleAction,
   TaskModalState,
 } from "../types/task";
 import {
+  buildTaskLifecyclePayload,
   buildCreateTaskPayload,
   buildUpdateTaskPayload,
   createTaskFormValues,
@@ -37,6 +39,10 @@ export function useTasks(session: Session) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [lifecycleTarget, setLifecycleTarget] = useState<{
+    action: TaskLifecycleAction;
+    task: Task;
+  } | null>(null);
   const [modalState, setModalState] = useState<TaskModalState>(closedModalState);
   const [notice, setNotice] = useState("");
   const [projectOptions, setProjectOptions] = useState<TaskCatalogOption[]>([]);
@@ -162,6 +168,20 @@ export function useTasks(session: Session) {
     setNotice("");
   }
 
+  function openLifecycleModal(task: Task, action: TaskLifecycleAction) {
+    setLifecycleTarget({ action, task });
+    setError("");
+    setNotice("");
+  }
+
+  function closeLifecycleModal() {
+    if (isSaving) {
+      return;
+    }
+
+    setLifecycleTarget(null);
+  }
+
   function closeDeleteModal() {
     if (isDeleting) {
       return;
@@ -228,9 +248,40 @@ export function useTasks(session: Session) {
     }
   }
 
+  async function confirmLifecycleAction() {
+    if (!lifecycleTarget) {
+      return;
+    }
+
+    setError("");
+    setNotice("");
+    setIsSaving(true);
+
+    try {
+      await taskService.update(
+        lifecycleTarget.task.id,
+        buildTaskLifecyclePayload(lifecycleTarget.task, lifecycleTarget.action),
+        session.apiToken,
+      );
+      setNotice(
+        lifecycleTarget.action === "start"
+          ? "Tarea iniciada."
+          : "Tarea finalizada.",
+      );
+      setLifecycleTarget(null);
+      await loadTasks();
+    } catch (actionError) {
+      setError(getErrorMessage(actionError));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return {
     closeDeleteModal,
     closeFormModal,
+    closeLifecycleModal,
+    confirmLifecycleAction,
     confirmDelete,
     deleteTarget,
     employeeOptions,
@@ -240,12 +291,14 @@ export function useTasks(session: Session) {
     isLoading,
     isLoadingCatalogs,
     isSaving,
+    lifecycleTarget,
     loadTasks,
     modalState,
     notice,
     openCreateModal,
     openDeleteModal,
     openEditModal,
+    openLifecycleModal,
     projectOptions,
     scope,
     selectedProjectId,

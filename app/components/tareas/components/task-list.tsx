@@ -1,7 +1,7 @@
 "use client";
 
-import { ClipboardCheck, Pencil, Trash2 } from "lucide-react";
-import type { Task } from "../types/task";
+import { ClipboardCheck, Flag, Pencil, Play, Trash2 } from "lucide-react";
+import type { Task, TaskLifecycleAction } from "../types/task";
 import { formatTaskDate } from "../utils/task-format";
 import { Button } from "../../ui/button";
 import { EmptyState } from "../../ui/empty-state";
@@ -11,6 +11,7 @@ type TaskListProps = {
   isLoading: boolean;
   onDelete: (task: Task) => void;
   onEdit: (task: Task) => void;
+  onLifecycleAction: (task: Task, action: TaskLifecycleAction) => void;
   tasks: Task[];
 };
 
@@ -18,6 +19,7 @@ export function TaskList({
   isLoading,
   onDelete,
   onEdit,
+  onLifecycleAction,
   tasks,
 }: TaskListProps) {
   return (
@@ -80,6 +82,24 @@ export function TaskList({
                     </td>
                     <td className="py-3 text-right">
                       <div className="flex justify-end gap-2">
+                        {!task.fechaInicioReal ? (
+                          <Button
+                            icon={<Play className="size-4" />}
+                            onClick={() => onLifecycleAction(task, "start")}
+                            variant="primary"
+                          >
+                            Iniciar
+                          </Button>
+                        ) : null}
+                        {task.fechaInicioReal && !task.fechaFinReal ? (
+                          <Button
+                            icon={<Flag className="size-4" />}
+                            onClick={() => onLifecycleAction(task, "finish")}
+                            variant="secondary"
+                          >
+                            Finalizar
+                          </Button>
+                        ) : null}
                         <Button
                           icon={<Pencil className="size-4" />}
                           onClick={() => onEdit(task)}
