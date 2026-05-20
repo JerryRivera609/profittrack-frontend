@@ -1,0 +1,45 @@
+import type { Task, TaskFormValues, TaskScope } from "../types/task";
+
+export function validateTaskForm(
+  form: TaskFormValues,
+  task: Task | null,
+  _scope: TaskScope,
+) {
+  if (!form.proyectoId.trim()) {
+    return "Selecciona un proyecto.";
+  }
+
+  if (!form.tipoTareaId.trim()) {
+    return "Completa el tipoTareaId.";
+  }
+
+  if (!form.empleadoAsignadoId.trim()) {
+    return "Selecciona un responsable.";
+  }
+
+  if (!form.nombre.trim()) {
+    return "Completa el nombre de la tarea.";
+  }
+
+  if (!form.descripcion.trim()) {
+    return "Completa la descripcion.";
+  }
+
+  if (!form.horasPlanificadas.trim()) {
+    return "Completa las horas planificadas.";
+  }
+
+  if (!form.fechaInicioPlanificada) {
+    return "Selecciona la fecha de inicio planificada.";
+  }
+
+  if (!form.fechaFinPlanificada) {
+    return "Selecciona la fecha de fin planificada.";
+  }
+
+  if (task && !form.estado.trim()) {
+    return "Completa el estado.";
+  }
+
+  return "";
+}
