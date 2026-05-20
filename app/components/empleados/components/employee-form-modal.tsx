@@ -13,6 +13,7 @@ import {
 import type { FormEvent } from "react";
 import type { EmployeeFormValues, EmployeeModalState, EmployeeScope } from "../types/employee";
 import { Button } from "../../ui/button";
+import { CalendarField } from "../../ui/calendar-field";
 import {
   Modal,
   ModalBody,
@@ -149,19 +150,21 @@ export function EmployeeFormModal({
               type="password"
               value={form.contrasenia}
             />
-            <TextField
+            <CalendarField
               icon={<CalendarDays className="size-4" />}
+              helperText="Selecciona la fecha efectiva de ingreso."
               label="Fecha de ingreso"
-              onChange={(event) => onChange("fechaIngreso", event.target.value)}
+              onChange={(selectedValue) => onChange("fechaIngreso", selectedValue)}
+              placeholder="Elige la fecha de ingreso"
               required
-              type="date"
               value={form.fechaIngreso}
             />
-            <TextField
+            <CalendarField
               icon={<CalendarDays className="size-4" />}
+              helperText="Opcional si el colaborador ya no sigue activo."
               label="Fecha de salida"
-              onChange={(event) => onChange("fechaSalida", event.target.value)}
-              type="date"
+              onChange={(selectedValue) => onChange("fechaSalida", selectedValue)}
+              placeholder="Elige la fecha de salida"
               value={form.fechaSalida}
             />
           </div>
