@@ -11,7 +11,7 @@ export type Employee = {
   numeroDocumento: string;
   correo: string;
   telefono: string;
-  fechaIngreso: string;
+  fechaIngreso?: string | null;
   fechaSalida?: string | null;
   activo: boolean;
 };

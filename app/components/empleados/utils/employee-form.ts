@@ -46,7 +46,7 @@ export function createEmployeeFormValues(
     contrasenia: "",
     correo: employee.correo,
     empresaId: employee.empresaId.toString(),
-    fechaIngreso: employee.fechaIngreso.slice(0, 10),
+    fechaIngreso: normalizeDateInput(employee.fechaIngreso),
     fechaSalida: employee.fechaSalida?.slice(0, 10) ?? "",
     nombres: employee.nombres,
     numeroDocumento: employee.numeroDocumento,
@@ -105,4 +105,8 @@ export function buildUpdateEmployeePayload(
   }
 
   return payload;
+}
+
+function normalizeDateInput(value?: string | null) {
+  return value?.slice(0, 10) ?? "";
 }

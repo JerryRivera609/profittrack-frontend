@@ -11,6 +11,7 @@ export type Session = {
   empresaId?: number;
   expiresAt: number;
   refreshToken: string;
+  sessionDurationMs: number;
 };
 
 export type Empresa = {

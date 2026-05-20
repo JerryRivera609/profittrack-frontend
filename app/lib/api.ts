@@ -16,6 +16,11 @@ export type LoginPayload = {
 };
 
 export type LoginResponse = {
+  accessToken?: string;
+  exp?: number;
+  expiresAt?: number | string;
+  expiresInSeconds?: number;
+  refreshToken?: string;
   tipo?: string;
   rol?: string;
   mensaje: string;
@@ -123,6 +128,10 @@ export const authApi = {
   login: (payload: LoginPayload) =>
     apiRequest<LoginResponse>("/api/auth/login", {
       body: payload,
+      method: "POST",
+    }),
+  refresh: () =>
+    apiRequest<LoginResponse | undefined>("/api/auth/refresh", {
       method: "POST",
     }),
 };

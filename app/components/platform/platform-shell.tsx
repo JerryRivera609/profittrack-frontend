@@ -17,9 +17,15 @@ import {
   roleLoginPath,
 } from "../../config/navigation";
 import {
+  authApi,
+  ApiRequestError,
+} from "../../lib/api";
+import {
+  buildRefreshedSession,
   clearStoredSession,
   getRoleLoginPath,
   getStoredSession,
+  updateStoredSession,
 } from "../../lib/auth-session";
 import { cn } from "../../lib/class-names";
 import type { Session } from "../../types/domain";
@@ -55,12 +61,71 @@ export function PlatformShell({ children }: PlatformShellProps) {
     }
   }, [router, session]);
 
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    const activeSession = session;
+    let cancelled = false;
+    let refreshTimeoutId: number | undefined;
+    let logoutTimeoutId: number | undefined;
+
+    async function runRefresh() {
+      try {
+        const response = await authApi.refresh();
+
+        if (cancelled) {
+          return;
+        }
+
+        const refreshedSession = buildRefreshedSession(activeSession, response);
+        updateStoredSession(refreshedSession);
+        setSession(refreshedSession);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error("[sessionRefresh]", error);
+        forceLogout(activeSession);
+      }
+    }
+
+    const refreshDelay = Math.max(activeSession.expiresAt - Date.now() - 10000, 0);
+    const logoutDelay = Math.max(activeSession.expiresAt - Date.now(), 0);
+
+    refreshTimeoutId = window.setTimeout(() => {
+      void runRefresh();
+    }, refreshDelay);
+
+    logoutTimeoutId = window.setTimeout(() => {
+      forceLogout(activeSession);
+    }, logoutDelay);
+
+    return () => {
+      cancelled = true;
+
+      if (refreshTimeoutId) {
+        window.clearTimeout(refreshTimeoutId);
+      }
+
+      if (logoutTimeoutId) {
+        window.clearTimeout(logoutTimeoutId);
+      }
+    };
+  }, [router, session]);
+
   function handleLogout() {
     if (!session) {
       return;
     }
 
-    const loginPath = getRoleLoginPath(session.role);
+    forceLogout(session);
+  }
+
+  function forceLogout(activeSession: Session) {
+    const loginPath = getRoleLoginPath(activeSession.role);
     clearStoredSession();
     setSession(null);
     router.replace(loginPath);

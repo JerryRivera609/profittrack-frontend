@@ -1,47 +1,59 @@
 "use client";
 
 import { roleHome, roleLoginPath } from "../config/navigation";
+import type { LoginResponse } from "./api";
 import type { Session, UserRole } from "../types/domain";
 
 const LOCAL_SESSION_KEY = "profittrack.session";
 const TEMP_SESSION_KEY = "profittrack.session.temp";
+const PERSISTENT_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const TEMP_SESSION_TTL_MS = 1000 * 60 * 60 * 8;
 
 type CreateSessionInput = {
   apiToken?: string;
+  accessToken?: string;
   backendRole?: string;
   companyName?: string;
   displayName: string;
   email: string;
   empresaId?: number;
+  expiresAt?: number;
+  refreshToken?: string;
   remember: boolean;
   role: UserRole;
 };
 
 export function createSession({
   apiToken,
+  accessToken,
   backendRole,
   companyName,
   displayName,
   email,
   empresaId,
+  expiresAt,
+  refreshToken,
   remember,
   role,
 }: CreateSessionInput): Session {
   const issuedAt = Date.now();
-  const expiresAt = issuedAt + (remember ? 1000 * 60 * 60 * 24 * 7 : 1000 * 60 * 60 * 8);
+  const sessionDurationMs = getSessionDurationMs(remember);
+  const resolvedExpiresAt =
+    expiresAt ?? issuedAt + sessionDurationMs;
   const tokenSeed = `${role}:${email}:${issuedAt}`;
 
   return {
-    accessToken: encodeToken(tokenSeed),
+    accessToken: accessToken ?? encodeToken(tokenSeed),
     apiToken,
     backendRole,
     companyName,
     displayName,
     email,
     empresaId,
-    expiresAt,
-    refreshToken: encodeToken(`${tokenSeed}:refresh`),
+    expiresAt: resolvedExpiresAt,
+    refreshToken: refreshToken ?? encodeToken(`${tokenSeed}:refresh`),
     role,
+    sessionDurationMs,
   };
 }
 
@@ -99,12 +111,152 @@ export function clearStoredSession() {
   window.sessionStorage.removeItem(TEMP_SESSION_KEY);
 }
 
+export function updateStoredSession(session: Session) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const persistentSessionExists = window.localStorage.getItem(LOCAL_SESSION_KEY);
+  const serializedSession = JSON.stringify(session);
+
+  if (persistentSessionExists) {
+    window.localStorage.setItem(LOCAL_SESSION_KEY, serializedSession);
+    window.sessionStorage.removeItem(TEMP_SESSION_KEY);
+    return;
+  }
+
+  window.sessionStorage.setItem(TEMP_SESSION_KEY, serializedSession);
+  window.localStorage.removeItem(LOCAL_SESSION_KEY);
+}
+
 export function getRoleHome(role: UserRole) {
   return roleHome[role];
 }
 
 export function getRoleLoginPath(role: UserRole) {
   return roleLoginPath[role];
+}
+
+export function normalizeBackendRole(
+  backendRole?: string,
+  backendType?: string,
+): UserRole | null {
+  const normalizedRole = backendRole?.trim().toLowerCase();
+  const normalizedType = backendType?.trim().toLowerCase();
+
+  if (normalizedRole === "administrador") {
+    return "ADMIN";
+  }
+
+  if (normalizedRole === "owner") {
+    return "OWNER";
+  }
+
+  if (normalizedType === "administrador" || normalizedType === "admin") {
+    return "ADMIN";
+  }
+
+  if (normalizedType === "duenio" || normalizedType === "owner") {
+    return "OWNER";
+  }
+
+  return null;
+}
+
+export function getExpiresAtFromAuthResponse(
+  response: LoginResponse | undefined,
+  fallbackDurationMs: number,
+) {
+  const now = Date.now();
+
+  if (response?.expiresAt !== undefined) {
+    const parsedExpiresAt =
+      typeof response.expiresAt === "string"
+        ? Date.parse(response.expiresAt)
+        : response.expiresAt;
+
+    if (Number.isFinite(parsedExpiresAt)) {
+      return parsedExpiresAt;
+    }
+  }
+
+  if (typeof response?.expiresInSeconds === "number") {
+    return now + response.expiresInSeconds * 1000;
+  }
+
+  if (typeof response?.exp === "number") {
+    return response.exp * 1000;
+  }
+
+  const jwtExpiresAt = getJwtExpiration(response?.accessToken);
+
+  if (jwtExpiresAt) {
+    return jwtExpiresAt;
+  }
+
+  return now + fallbackDurationMs;
+}
+
+export function buildRefreshedSession(
+  currentSession: Session,
+  response?: LoginResponse,
+) {
+  const normalizedRole =
+    normalizeBackendRole(response?.rol, response?.tipo) ?? currentSession.role;
+
+  return {
+    ...currentSession,
+    accessToken: response?.accessToken ?? currentSession.accessToken,
+    backendRole: response?.rol ?? currentSession.backendRole,
+    companyName:
+      normalizedRole === "ADMIN"
+        ? "ProfitTrack HQ"
+        : response?.empresaId
+          ? `Empresa #${response.empresaId}`
+          : currentSession.companyName,
+    displayName: response?.nombre?.trim() || currentSession.displayName,
+    empresaId: response?.empresaId ?? currentSession.empresaId,
+    expiresAt: getExpiresAtFromAuthResponse(
+      response,
+      currentSession.sessionDurationMs,
+    ),
+    refreshToken: response?.refreshToken ?? currentSession.refreshToken,
+    role: normalizedRole,
+  };
+}
+
+function getSessionDurationMs(remember: boolean) {
+  return remember ? PERSISTENT_SESSION_TTL_MS : TEMP_SESSION_TTL_MS;
+}
+
+function getJwtExpiration(token?: string) {
+  if (!token) {
+    return null;
+  }
+
+  const parts = token.split(".");
+
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(decodeBase64Url(parts[1])) as { exp?: number };
+    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+function decodeBase64Url(value: string) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
+
+  if (typeof window === "undefined") {
+    return Buffer.from(`${normalized}${padding}`, "base64").toString("utf-8");
+  }
+
+  return window.atob(`${normalized}${padding}`);
 }
 
 function encodeToken(value: string) {
