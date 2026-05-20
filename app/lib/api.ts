@@ -39,7 +39,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-async function apiRequest<T>(
+export async function apiRequest<T>(
   path: string,
   { method = "GET", body, token }: ApiRequestOptions = {},
 ) {
