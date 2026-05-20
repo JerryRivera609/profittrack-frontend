@@ -6,18 +6,21 @@ import {
   FileCode2,
   FileText,
   FolderKanban,
+  Pencil,
   Percent,
   ShieldCheck,
   UserRound,
   UsersRound,
 } from "lucide-react";
 import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   ProjectCatalogOption,
   ProjectFormValues,
   ProjectModalState,
   ProjectScope,
 } from "../types/project";
+import { cn } from "../../../lib/class-names";
 import { Button } from "../../ui/button";
 import { CalendarField } from "../../ui/calendar-field";
 import {
@@ -61,6 +64,51 @@ export function ProjectFormModal({
   scope,
 }: ProjectFormModalProps) {
   const isEdit = modalState.mode === "edit";
+  const [isManualMargin, setIsManualMargin] = useState(false);
+
+  const computedMarginAmount = useMemo(() => {
+    const plannedCost = Number.parseFloat(form.presupuestoPlanificado || "0");
+    const salePrice = Number.parseFloat(form.precioVenta || "0");
+
+    if (!Number.isFinite(plannedCost) || !Number.isFinite(salePrice)) {
+      return 0;
+    }
+
+    return salePrice - plannedCost;
+  }, [form.precioVenta, form.presupuestoPlanificado]);
+
+  const computedMarginPercentage = useMemo(() => {
+    const salePrice = Number.parseFloat(form.precioVenta || "0");
+
+    if (!Number.isFinite(salePrice) || salePrice <= 0) {
+      return 0;
+    }
+
+    return (computedMarginAmount / salePrice) * 100;
+  }, [computedMarginAmount, form.precioVenta]);
+
+  useEffect(() => {
+    if (modalState.open) {
+      setIsManualMargin(false);
+    }
+  }, [modalState.open, modalState.project?.id]);
+
+  useEffect(() => {
+    if (isManualMargin) {
+      return;
+    }
+
+    const nextMargin = formatDecimalValue(computedMarginAmount);
+
+    if (form.margenPlanificado !== nextMargin) {
+      onChange("margenPlanificado", nextMargin);
+    }
+  }, [
+    computedMarginAmount,
+    form.margenPlanificado,
+    isManualMargin,
+    onChange,
+  ]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -215,15 +263,6 @@ export function ProjectFormModal({
               value={form.presupuestoPlanificado}
             />
             <TextField
-              icon={<Percent className="size-4" />}
-              label="Margen planificado"
-              onChange={(event) => onChange("margenPlanificado", event.target.value)}
-              required
-              step="0.01"
-              type="number"
-              value={form.margenPlanificado}
-            />
-            <TextField
               icon={<DollarSign className="size-4" />}
               label="Precio de venta"
               min="0"
@@ -233,6 +272,40 @@ export function ProjectFormModal({
               type="number"
               value={form.precioVenta}
             />
+            <label className="block text-sm font-medium text-slate-700">
+              <span className="flex items-center justify-between gap-3">
+                <span>Margen planificado</span>
+                <button
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition",
+                    isManualMargin
+                      ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900",
+                  )}
+                  onClick={() => setIsManualMargin((current) => !current)}
+                  type="button"
+                >
+                  <Pencil className="size-3.5" />
+                  {isManualMargin ? "Manual" : "Auto"}
+                </button>
+              </span>
+              <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-500 transition focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-100">
+                <Percent className="size-4" />
+                <input
+                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-950 outline-none placeholder:text-slate-400"
+                  onChange={(event) => onChange("margenPlanificado", event.target.value)}
+                  required
+                  step="0.01"
+                  type="number"
+                  value={form.margenPlanificado}
+                />
+              </span>
+              <span className="mt-1 block text-xs font-normal text-slate-500">
+                {isManualMargin
+                  ? "Modo manual activo. Puedes ajustar el margen a mano."
+                  : `Calculado automatico: utilidad S/ ${formatDecimalValue(computedMarginAmount)} · margen ${formatDecimalValue(computedMarginPercentage)}%`}
+              </span>
+            </label>
             {isEdit ? (
               <TextField
                 icon={<FolderKanban className="size-4" />}
@@ -260,4 +333,8 @@ export function ProjectFormModal({
       </form>
     </Modal>
   );
+}
+
+function formatDecimalValue(value: number) {
+  return Number.isFinite(value) ? value.toFixed(2) : "0.00";
 }
