@@ -13,8 +13,14 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { roleCapabilities, roleLabels } from "../../config/navigation";
 import { API_BASE_URL, ApiRequestError, authApi } from "../../lib/api";
-import { createSession, getRoleHome, getStoredSession, saveSession } from "../../lib/auth-session";
-import type { UserRole } from "../../types/domain";
+import {
+  createSession,
+  getExpiresAtFromAuthResponse,
+  getRoleHome,
+  getStoredSession,
+  normalizeBackendRole,
+  saveSession,
+} from "../../lib/auth-session";
 import { Button } from "../ui/button";
 import { TextField } from "../ui/text-field";
 
@@ -60,11 +66,17 @@ export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
       }
 
       const session = createSession({
+        accessToken: response.accessToken,
         backendRole: response.rol,
         companyName: getCompanyName(normalizedRole, response.empresaId),
         displayName: response.nombre?.trim() || email.trim(),
         email,
         empresaId: response.empresaId,
+        expiresAt: getExpiresAtFromAuthResponse(
+          response,
+          remember ? 1000 * 60 * 60 * 24 * 7 : 1000 * 60 * 60 * 8,
+        ),
+        refreshToken: response.refreshToken,
         remember,
         role: normalizedRole,
       });
@@ -229,36 +241,10 @@ export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
   );
 }
 
-function normalizeBackendRole(
-  backendRole?: string,
-  backendType?: string,
-): UserRole | null {
-  const normalizedRole = backendRole?.trim().toLowerCase();
-  const normalizedType = backendType?.trim().toLowerCase();
-
-  if (normalizedRole === roleLabels.ADMIN.toLowerCase()) {
-    return "ADMIN";
-  }
-
-  if (normalizedRole === roleLabels.OWNER.toLowerCase()) {
-    return "OWNER";
-  }
-
-  if (normalizedType === "administrador" || normalizedType === "admin") {
-    return "ADMIN";
-  }
-
-  if (normalizedType === "duenio" || normalizedType === "owner") {
-    return "OWNER";
-  }
-
-  return null;
-}
-
-function getCompanyName(role: UserRole, empresaId?: number) {
+function getCompanyName(role: string, empresaId?: number) {
   if (role === "ADMIN") {
     return "ProfitTrack HQ";
   }
 
-  return empresaId ? `Empresa #${empresaId}` : roleLabels[role];
+  return empresaId ? `Empresa #${empresaId}` : "Empresa asignada";
 }
