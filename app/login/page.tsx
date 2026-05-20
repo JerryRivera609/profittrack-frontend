@@ -1,12 +1,10 @@
 import { RoleLoginPage } from "../components/auth/role-login-page";
 
-export default function OwnerLoginPage() {
+export default function LoginPage() {
   return (
     <RoleLoginPage
-      defaultEmail="owner@empresa.com"
-      description="Acceso normal para owners: gestion de su empresa, equipo, proyectos, horas HH, finanzas y reportes."
-      role="OWNER"
-      title="Gestiona la operacion de tu empresa."
+      description="Ingresa con tu correo y contrasenia. El sistema identificara si eres Administrador u Owner y te llevara a la interfaz correspondiente."
+      title="Accede a ProfitTrack desde un solo login."
     />
   );
 }

@@ -6,11 +6,22 @@ import type {
   EmpresaPayload,
 } from "../types/domain";
 
-const DEFAULT_API_BASE_URL = "http://localhost:8080";
-
 export const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_BASE_URL
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 ).replace(/\/$/, "");
+
+export type LoginPayload = {
+  correo: string;
+  contrasenia: string;
+};
+
+export type LoginResponse = {
+  tipo?: string;
+  rol?: string;
+  mensaje: string;
+  empresaId?: number;
+  nombre?: string;
+};
 
 type ApiRequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -88,6 +99,14 @@ export const empresasApi = {
     apiRequest<void>(`/api/empresas/${id}`, {
       method: "DELETE",
       token,
+    }),
+};
+
+export const authApi = {
+  login: (payload: LoginPayload) =>
+    apiRequest<LoginResponse>("/api/auth/login", {
+      body: payload,
+      method: "POST",
     }),
 };
 

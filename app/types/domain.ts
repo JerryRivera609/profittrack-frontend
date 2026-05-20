@@ -2,11 +2,13 @@ export type UserRole = "ADMIN" | "OWNER" | "LIDER" | "EMPLEADO";
 
 export type Session = {
   role: UserRole;
+  backendRole?: string;
   email: string;
   displayName: string;
   accessToken: string;
   apiToken?: string;
   companyName?: string;
+  empresaId?: number;
   expiresAt: number;
   refreshToken: string;
 };

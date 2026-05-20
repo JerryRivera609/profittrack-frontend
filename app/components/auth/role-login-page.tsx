@@ -2,70 +2,85 @@
 
 import {
   ArrowRight,
-  BriefcaseBusiness,
   Eye,
   EyeOff,
-  KeyRound,
   LineChart,
   LockKeyhole,
   Mail,
   ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
-import { portalOptions, roleCapabilities, roleLabels } from "../../config/navigation";
-import { API_BASE_URL } from "../../lib/api";
-import {
-  createDemoSession,
-  getRoleHome,
-  saveSession,
-} from "../../lib/auth-session";
-import { cn } from "../../lib/class-names";
-import { getDisplayName } from "../../lib/display";
+import { FormEvent, useEffect, useState } from "react";
+import { roleCapabilities, roleLabels } from "../../config/navigation";
+import { API_BASE_URL, ApiRequestError, authApi } from "../../lib/api";
+import { createSession, getRoleHome, getStoredSession, saveSession } from "../../lib/auth-session";
 import type { UserRole } from "../../types/domain";
 import { Button } from "../ui/button";
 import { TextField } from "../ui/text-field";
 
 type RoleLoginPageProps = {
-  defaultEmail: string;
   description: string;
-  role: UserRole;
   title: string;
 };
 
-export function RoleLoginPage({
-  defaultEmail,
-  description,
-  role,
-  title,
-}: RoleLoginPageProps) {
+export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
   const router = useRouter();
-  const [apiToken, setApiToken] = useState("");
-  const [email, setEmail] = useState(defaultEmail);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const capabilities = useMemo(() => roleCapabilities[role], [role]);
-  const isAdmin = role === "ADMIN";
+  useEffect(() => {
+    const existingSession = getStoredSession();
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (existingSession) {
+      router.replace(getRoleHome(existingSession.role));
+    }
+  }, [router]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const session = createDemoSession({
-      apiToken: apiToken.trim() || undefined,
-      companyName: role === "ADMIN" ? "ProfitTrack HQ" : "Empresa demo",
-      displayName: getDisplayName(email),
-      email,
-      remember,
-      role,
-    });
+    setIsSubmitting(true);
+    setStatus("Validando credenciales...");
 
-    saveSession(session, remember);
-    setStatus("Sesion iniciada. Redirigiendo...");
-    router.replace(getRoleHome(role));
+    try {
+      const response = await authApi.login({
+        contrasenia: password,
+        correo: email.trim(),
+      });
+
+      const normalizedRole = normalizeBackendRole(response.rol, response.tipo);
+
+      if (!normalizedRole) {
+        setStatus("No se pudo identificar el rol del usuario.");
+        return;
+      }
+
+      const session = createSession({
+        backendRole: response.rol,
+        companyName: getCompanyName(normalizedRole, response.empresaId),
+        displayName: response.nombre?.trim() || email.trim(),
+        email,
+        empresaId: response.empresaId,
+        remember,
+        role: normalizedRole,
+      });
+
+      saveSession(session, remember);
+      setStatus(response.mensaje || "Sesion iniciada. Redirigiendo...");
+      router.replace(getRoleHome(normalizedRole));
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
+        setStatus(error.message);
+      } else {
+        setStatus("No se pudo iniciar sesion. Intenta nuevamente.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -88,7 +103,7 @@ export function RoleLoginPage({
 
           <p className="mb-3 inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-800">
             <ShieldCheck className="size-4" />
-            Portal {roleLabels[role]}
+            Login unificado
           </p>
           <h1 className="max-w-xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
             {title}
@@ -98,7 +113,10 @@ export function RoleLoginPage({
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {capabilities.slice(0, 4).map((capability) => (
+            {[
+              ...roleCapabilities.ADMIN.slice(0, 2),
+              ...roleCapabilities.OWNER.slice(0, 2),
+            ].map((capability) => (
               <div
                 className="rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm"
                 key={capability}
@@ -115,7 +133,15 @@ export function RoleLoginPage({
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <PortalSwitcher activeRole={role} />
+          <div className="mb-4">
+            <p className="text-sm font-medium text-slate-500">Portal</p>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Un solo acceso para Admin y Owner
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Detectamos tu rol automaticamente desde la respuesta del backend.
+            </p>
+          </div>
 
           <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
             <TextField
@@ -134,7 +160,7 @@ export function RoleLoginPage({
                 <input
                   className="min-w-0 flex-1 bg-transparent text-sm text-slate-950 outline-none placeholder:text-slate-400"
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Ingresa tu password"
+                  placeholder="Ingresa tu contrasenia"
                   required
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -153,17 +179,6 @@ export function RoleLoginPage({
                 </button>
               </span>
             </label>
-
-            {isAdmin && (
-              <TextField
-                icon={<KeyRound className="size-4" />}
-                label="Token API"
-                onChange={(event) => setApiToken(event.target.value)}
-                placeholder="Opcional para Authorization Bearer"
-                type="password"
-                value={apiToken}
-              />
-            )}
 
             <div className="flex items-center justify-between gap-3 text-sm">
               <label className="flex items-center gap-2 font-medium text-slate-600">
@@ -197,9 +212,10 @@ export function RoleLoginPage({
             <Button
               className="w-full"
               icon={<ArrowRight className="size-4" />}
+              disabled={isSubmitting}
               type="submit"
             >
-              Ingresar
+              {isSubmitting ? "Ingresando..." : "Ingresar"}
             </Button>
           </form>
 
@@ -213,41 +229,36 @@ export function RoleLoginPage({
   );
 }
 
-function PortalSwitcher({ activeRole }: { activeRole: UserRole }) {
-  return (
-    <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-slate-500">Login</p>
-          <h2 className="text-xl font-semibold tracking-tight">
-            Selecciona tu portal
-          </h2>
-        </div>
-        <BriefcaseBusiness className="size-5 text-slate-400" />
-      </div>
+function normalizeBackendRole(
+  backendRole?: string,
+  backendType?: string,
+): UserRole | null {
+  const normalizedRole = backendRole?.trim().toLowerCase();
+  const normalizedType = backendType?.trim().toLowerCase();
 
-      <div className="grid gap-2 sm:grid-cols-3">
-        {portalOptions.map((portal) => {
-          const Icon = portal.icon;
-          const isActive = portal.role === activeRole;
+  if (normalizedRole === roleLabels.ADMIN.toLowerCase()) {
+    return "ADMIN";
+  }
 
-          return (
-            <Link
-              className={cn(
-                "flex h-11 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition",
-                isActive
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950",
-              )}
-              href={portal.href}
-              key={portal.href}
-            >
-              <Icon className="size-4" />
-              <span>{portal.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
+  if (normalizedRole === roleLabels.OWNER.toLowerCase()) {
+    return "OWNER";
+  }
+
+  if (normalizedType === "administrador" || normalizedType === "admin") {
+    return "ADMIN";
+  }
+
+  if (normalizedType === "duenio" || normalizedType === "owner") {
+    return "OWNER";
+  }
+
+  return null;
+}
+
+function getCompanyName(role: UserRole, empresaId?: number) {
+  if (role === "ADMIN") {
+    return "ProfitTrack HQ";
+  }
+
+  return empresaId ? `Empresa #${empresaId}` : roleLabels[role];
 }

@@ -1,12 +1,5 @@
-import { RoleLoginPage } from "../components/auth/role-login-page";
+import { redirect } from "next/navigation";
 
-export default function AdminLoginPage() {
-  return (
-    <RoleLoginPage
-      defaultEmail="admin@profittrack.app"
-      description="Acceso de administracion global para crear empresas, owners, usuarios, permisos y revisar auditoria."
-      role="ADMIN"
-      title="Administra toda la plataforma desde un solo portal."
-    />
-  );
+export default function AdminPage() {
+  redirect("/login");
 }

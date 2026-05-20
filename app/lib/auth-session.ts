@@ -8,18 +8,22 @@ const TEMP_SESSION_KEY = "profittrack.session.temp";
 
 type CreateSessionInput = {
   apiToken?: string;
+  backendRole?: string;
   companyName?: string;
   displayName: string;
   email: string;
+  empresaId?: number;
   remember: boolean;
   role: UserRole;
 };
 
-export function createDemoSession({
+export function createSession({
   apiToken,
+  backendRole,
   companyName,
   displayName,
   email,
+  empresaId,
   remember,
   role,
 }: CreateSessionInput): Session {
@@ -30,9 +34,11 @@ export function createDemoSession({
   return {
     accessToken: encodeToken(tokenSeed),
     apiToken,
+    backendRole,
     companyName,
     displayName,
     email,
+    empresaId,
     expiresAt,
     refreshToken: encodeToken(`${tokenSeed}:refresh`),
     role,

@@ -39,8 +39,8 @@ export const roleHome: Record<UserRole, string> = {
 };
 
 export const roleLoginPath: Record<UserRole, string> = {
-  ADMIN: "/admin",
-  EMPLEADO: "/empleados/login",
+  ADMIN: "/login",
+  EMPLEADO: "/login",
   LIDER: "/login",
   OWNER: "/login",
 };
