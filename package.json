@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "bdd": "node -r ./tests/bdd/support/register-ts-node.cjs ./node_modules/@cucumber/cucumber/bin/cucumber-js --config cucumber.mjs",
+    "bdd:horas": "node -r ./tests/bdd/support/register-ts-node.cjs ./node_modules/@cucumber/cucumber/bin/cucumber-js tests/bdd/features/horas/**/*.feature --require tests/bdd/**/*.ts --format progress-bar",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -15,6 +17,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^12.9.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -22,6 +25,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }
