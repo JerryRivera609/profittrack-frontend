@@ -39,6 +39,7 @@ type TimeEntryFormModalProps = {
   onStartNow: () => void;
   onSubmit: () => void;
   projectOptions: TimeEntryCatalogOption[];
+  showQuickCapture?: boolean;
   taskOptions: TimeEntryCatalogOption[];
 };
 
@@ -53,6 +54,7 @@ export function TimeEntryFormModal({
   onStartNow,
   onSubmit,
   projectOptions,
+  showQuickCapture = true,
   taskOptions,
 }: TimeEntryFormModalProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -143,30 +145,32 @@ export function TimeEntryFormModal({
               type="number"
               value={form.horasTrabajadas}
             />
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  icon={<PlayCircle className="size-4" />}
-                  onClick={onStartNow}
-                  type="button"
-                  variant="secondary"
-                >
-                  Iniciar ahora
-                </Button>
-                <Button
-                  icon={<PauseCircle className="size-4" />}
-                  onClick={onFinishNow}
-                  type="button"
-                  variant="secondary"
-                >
-                  Finalizar ahora
-                </Button>
+            {showQuickCapture ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    icon={<PlayCircle className="size-4" />}
+                    onClick={onStartNow}
+                    type="button"
+                    variant="secondary"
+                  >
+                    Iniciar ahora
+                  </Button>
+                  <Button
+                    icon={<PauseCircle className="size-4" />}
+                    onClick={onFinishNow}
+                    type="button"
+                    variant="secondary"
+                  >
+                    Finalizar ahora
+                  </Button>
+                </div>
+                <p className="mt-3 text-sm text-slate-600">
+                  Usa este flujo como temporizador por tarea. Si trabajaste fuera del
+                  sistema, puedes registrar manualmente las horas ajustando inicio, fin y descanso.
+                </p>
               </div>
-              <p className="mt-3 text-sm text-slate-600">
-                Usa este flujo como temporizador por tarea. Si trabajaste fuera del
-                sistema, puedes registrar manualmente las horas ajustando inicio, fin y descanso.
-              </p>
-            </div>
+            ) : null}
             <label className="block text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
               Comentario de trabajo
               <span className="mt-1.5 flex rounded-lg border border-slate-200 bg-white px-3 py-3 text-slate-500 transition focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-100">

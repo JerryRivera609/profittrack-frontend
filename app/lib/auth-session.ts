@@ -15,6 +15,7 @@ type CreateSessionInput = {
   backendRole?: string;
   companyName?: string;
   displayName: string;
+  empleadoId?: number;
   email: string;
   empresaId?: number;
   expiresAt?: number;
@@ -29,6 +30,7 @@ export function createSession({
   backendRole,
   companyName,
   displayName,
+  empleadoId,
   email,
   empresaId,
   expiresAt,
@@ -48,6 +50,7 @@ export function createSession({
     backendRole,
     companyName,
     displayName,
+    empleadoId: empleadoId ?? getUserIdFromAuthResponse(undefined, accessToken) ?? undefined,
     email,
     empresaId,
     expiresAt: resolvedExpiresAt,
@@ -208,6 +211,9 @@ export function buildRefreshedSession(
           ? `Empresa #${response.empresaId}`
           : currentSession.companyName,
     displayName: response?.nombre?.trim() || currentSession.displayName,
+    empleadoId:
+      getUserIdFromAuthResponse(response, response?.accessToken) ??
+      currentSession.empleadoId,
     empresaId: response?.empresaId ?? currentSession.empresaId,
     expiresAt: getExpiresAtFromAuthResponse(
       response,
@@ -223,6 +229,34 @@ function getSessionDurationMs(remember: boolean) {
 }
 
 function getJwtExpiration(token?: string) {
+  const payload = getJwtPayload(token);
+  return typeof payload?.exp === "number" ? payload.exp * 1000 : null;
+}
+
+function getUserIdFromAuthResponse(
+  response?: LoginResponse,
+  token?: string,
+) {
+  const responseId =
+    response?.empleadoId ??
+    response?.usuarioId ??
+    response?.id;
+
+  if (typeof responseId === "number") {
+    return responseId;
+  }
+
+  const payload = getJwtPayload(token);
+  const candidate =
+    payload?.empleadoId ??
+    payload?.usuarioId ??
+    payload?.userId ??
+    payload?.id;
+
+  return typeof candidate === "number" ? candidate : null;
+}
+
+function getJwtPayload(token?: string) {
   if (!token) {
     return null;
   }
@@ -234,8 +268,13 @@ function getJwtExpiration(token?: string) {
   }
 
   try {
-    const payload = JSON.parse(decodeBase64Url(parts[1])) as { exp?: number };
-    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+    return JSON.parse(decodeBase64Url(parts[1])) as {
+      empleadoId?: number;
+      exp?: number;
+      id?: number;
+      userId?: number;
+      usuarioId?: number;
+    };
   } catch {
     return null;
   }

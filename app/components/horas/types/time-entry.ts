@@ -77,6 +77,35 @@ export type TimeEntryModalState = {
   open: boolean;
 };
 
+export type PendingTaskWorkItem = {
+  empleadoAsignadoId?: number | null;
+  id: number;
+  proyectoId: number;
+  proyectoNombre: string;
+  proyectoCodigo: string;
+  clienteNombre: string;
+  nombre: string;
+  descripcion: string;
+  estado: string;
+  horasPlanificadas: number;
+  horasReales: number;
+  fechaInicioPlanificada?: string | null;
+  fechaFinPlanificada?: string | null;
+};
+
+export type WorkSessionState = {
+  open: boolean;
+  task: PendingTaskWorkItem | null;
+  fechaTrabajo: string;
+  startedAt: string;
+  lastResumedAt: string | null;
+  pausedAt: string | null;
+  accumulatedWorkMs: number;
+  accumulatedPauseMs: number;
+  descripcion: string;
+  status: "paused" | "running";
+};
+
 export type TimeEntryStats = {
   label: string;
   value: string;

@@ -2,28 +2,34 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
+import type { Project } from "../../proyectos/types/project";
 import { projectService } from "../../proyectos/services/project-service";
+import type { Task } from "../../tareas/types/task";
 import { taskService } from "../../tareas/services/task-service";
 import { validateTimeEntryForm } from "../schema/time-entry-schema";
 import { timeEntryService } from "../services/time-entry-service";
 import type {
+  PendingTaskWorkItem,
   TimeEntry,
   TimeEntryCatalogOption,
   TimeEntryFilters,
   TimeEntryFormValues,
   TimeEntryModalState,
   TimeEntrySummary,
+  WorkSessionState,
 } from "../types/time-entry";
 import {
-  applyFinishNow,
-  applyStartNow,
   buildCreateTimeEntryPayload,
   buildSummaryFromEntries,
+  buildTimeEntryFormValuesFromTask,
   createTimeEntryFilters,
   createTimeEntryFormValues,
   createTimeEntryScope,
+  createWorkSession,
+  formatDateTimeLocal,
   updateTimeEntryFormValue,
 } from "../utils/time-entry-form";
+import { getPendingTaskItems } from "../utils/time-entry-format";
 
 const closedModalState: TimeEntryModalState = {
   open: false,
@@ -44,17 +50,23 @@ export function useTimeEntries(session: Session) {
   const [form, setForm] = useState<TimeEntryFormValues>(() =>
     createTimeEntryFormValues(),
   );
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isDeciding, setIsDeciding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isFinishingSession, setIsFinishingSession] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPendingTasks, setIsLoadingPendingTasks] = useState(false);
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [modalState, setModalState] = useState<TimeEntryModalState>(closedModalState);
+  const [manualModalState, setManualModalState] =
+    useState<TimeEntryModalState>(closedModalState);
   const [notice, setNotice] = useState("");
+  const [pendingTasks, setPendingTasks] = useState<PendingTaskWorkItem[]>([]);
   const [projectOptions, setProjectOptions] = useState<TimeEntryCatalogOption[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [summary, setSummary] = useState<TimeEntrySummary | null>(null);
   const [taskOptions, setTaskOptions] = useState<TimeEntryCatalogOption[]>([]);
+  const [workSession, setWorkSession] = useState<WorkSessionState | null>(null);
 
   const loadProjectOptions = useCallback(async () => {
     try {
@@ -75,6 +87,7 @@ export function useTimeEntries(session: Session) {
         value: project.id.toString(),
       }));
 
+      setProjects(visibleProjects);
       setProjectOptions(nextOptions);
       setFilters((current) => ({
         ...current,
@@ -87,7 +100,7 @@ export function useTimeEntries(session: Session) {
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     }
-  }, [scope, session.apiToken]);
+  }, [scope, session.apiToken, session.role]);
 
   const loadTasksForProject = useCallback(
     async (projectId: string) => {
@@ -129,6 +142,49 @@ export function useTimeEntries(session: Session) {
     },
     [session.apiToken],
   );
+
+  const loadPendingTasks = useCallback(async () => {
+    if (!scope.isDeveloper) {
+      setPendingTasks([]);
+      return;
+    }
+
+    if (projects.length === 0) {
+      setPendingTasks([]);
+      return;
+    }
+
+    setIsLoadingPendingTasks(true);
+
+    try {
+      const taskResponses = await Promise.all(
+        projects.map((project) =>
+          taskService.listByProject(project.id, session.apiToken),
+        ),
+      );
+
+      const nextTasks = projects.flatMap((project, index) => {
+        const projectTasks = taskResponses[index] ?? [];
+
+        return projectTasks
+          .filter(
+            (task) =>
+              task.activo &&
+              task.estado !== "FINALIZADO" &&
+              (session.empleadoId
+                ? task.empleadoAsignadoId === session.empleadoId
+                : true),
+          )
+          .map((task) => mapPendingTask(project, task));
+      });
+
+      setPendingTasks(getPendingTaskItems(nextTasks));
+    } catch (loadError) {
+      setError(getErrorMessage(loadError));
+    } finally {
+      setIsLoadingPendingTasks(false);
+    }
+  }, [projects, scope.isDeveloper, session.apiToken]);
 
   const loadEntries = useCallback(async () => {
     setError("");
@@ -228,11 +284,27 @@ export function useTimeEntries(session: Session) {
     return () => window.clearTimeout(timeoutId);
   }, [loadSummary]);
 
-  function openCreateModal() {
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadPendingTasks();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadPendingTasks]);
+
+  function openCreateModal(projectId = filters.proyectoId, taskId = "") {
     setError("");
     setNotice("");
-    setForm(createTimeEntryFormValues(filters.proyectoId, ""));
-    setModalState({ open: true });
+    setForm(
+      taskId
+        ? buildTimeEntryFormValuesFromTask(Number.parseInt(projectId, 10), Number.parseInt(taskId, 10))
+        : createTimeEntryFormValues(projectId, ""),
+    );
+    setManualModalState({ open: true });
+  }
+
+  function openManualEntryForTask(task: PendingTaskWorkItem) {
+    openCreateModal(task.proyectoId.toString(), task.id.toString());
   }
 
   function closeFormModal() {
@@ -240,7 +312,7 @@ export function useTimeEntries(session: Session) {
       return;
     }
 
-    setModalState(closedModalState);
+    setManualModalState(closedModalState);
     setForm(createTimeEntryFormValues(filters.proyectoId, ""));
   }
 
@@ -272,19 +344,69 @@ export function useTimeEntries(session: Session) {
     setDecisionTarget(null);
   }
 
+  function openWorkSessionForTask(task: PendingTaskWorkItem) {
+    setError("");
+    setNotice("");
+    setWorkSession(createWorkSession(task));
+  }
+
+  function closeWorkSession() {
+    if (isFinishingSession) {
+      return;
+    }
+
+    setWorkSession(null);
+  }
+
+  function pauseWorkSession() {
+    setWorkSession((current) => {
+      if (!current || current.status !== "running" || !current.lastResumedAt) {
+        return current;
+      }
+
+      const now = new Date();
+
+      return {
+        ...current,
+        accumulatedWorkMs:
+          current.accumulatedWorkMs +
+          (now.getTime() - new Date(current.lastResumedAt).getTime()),
+        lastResumedAt: null,
+        pausedAt: now.toISOString(),
+        status: "paused",
+      };
+    });
+  }
+
+  function resumeWorkSession() {
+    setWorkSession((current) => {
+      if (!current || current.status !== "paused" || !current.pausedAt) {
+        return current;
+      }
+
+      const now = new Date();
+
+      return {
+        ...current,
+        accumulatedPauseMs:
+          current.accumulatedPauseMs +
+          (now.getTime() - new Date(current.pausedAt).getTime()),
+        lastResumedAt: now.toISOString(),
+        pausedAt: null,
+        status: "running",
+      };
+    });
+  }
+
+  function updateWorkSessionDescription(value: string) {
+    setWorkSession((current) => (current ? { ...current, descripcion: value } : current));
+  }
+
   function updateForm<Key extends keyof TimeEntryFormValues>(
     key: Key,
     value: TimeEntryFormValues[Key],
   ) {
     setForm((current) => updateTimeEntryFormValue(current, key, value));
-  }
-
-  function startNow() {
-    setForm((current) => applyStartNow(current));
-  }
-
-  function finishNow() {
-    setForm((current) => applyFinishNow(current));
   }
 
   async function submitTimeEntry() {
@@ -307,13 +429,74 @@ export function useTimeEntries(session: Session) {
       );
       setNotice("Registro de horas creado.");
       closeFormModal();
-      await Promise.all([loadEntries(), loadSummary()]);
+      await Promise.all([loadEntries(), loadSummary(), loadPendingTasks()]);
       return true;
     } catch (submitError) {
       setError(getErrorMessage(submitError));
       return false;
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function finalizeWorkSession() {
+    if (!workSession?.task) {
+      return false;
+    }
+
+    setError("");
+    setNotice("");
+    setIsFinishingSession(true);
+
+    try {
+      const finishDate = new Date();
+      const startedAtDate = new Date(workSession.startedAt);
+      let accumulatedWorkMs = workSession.accumulatedWorkMs;
+      let accumulatedPauseMs = workSession.accumulatedPauseMs;
+
+      if (workSession.status === "running" && workSession.lastResumedAt) {
+        accumulatedWorkMs +=
+          finishDate.getTime() - new Date(workSession.lastResumedAt).getTime();
+      }
+
+      if (workSession.status === "paused" && workSession.pausedAt) {
+        accumulatedPauseMs +=
+          finishDate.getTime() - new Date(workSession.pausedAt).getTime();
+      }
+
+      const formValues: TimeEntryFormValues = {
+        descripcion:
+          workSession.descripcion.trim() ||
+          `Trabajo registrado sobre ${workSession.task.nombre}.`,
+        fechaTrabajo: workSession.fechaTrabajo,
+        horaIngreso: formatDateTimeLocal(startedAtDate),
+        horaSalida: formatDateTimeLocal(finishDate),
+        horasTrabajadas: (accumulatedWorkMs / 3_600_000).toFixed(2),
+        minutosDescanso: Math.max(0, Math.round(accumulatedPauseMs / 60_000)).toString(),
+        proyectoId: workSession.task.proyectoId.toString(),
+        tareaId: workSession.task.id.toString(),
+      };
+
+      const validationError = validateTimeEntryForm(formValues);
+
+      if (validationError) {
+        setError(validationError);
+        return false;
+      }
+
+      await timeEntryService.create(
+        buildCreateTimeEntryPayload(formValues),
+        session.apiToken,
+      );
+      setNotice("Horas registradas desde la sesión activa.");
+      setWorkSession(null);
+      await Promise.all([loadEntries(), loadSummary(), loadPendingTasks()]);
+      return true;
+    } catch (submitError) {
+      setError(getErrorMessage(submitError));
+      return false;
+    } finally {
+      setIsFinishingSession(false);
     }
   }
 
@@ -369,35 +552,62 @@ export function useTimeEntries(session: Session) {
     closeDecisionModal,
     closeDeleteModal,
     closeFormModal,
+    closeWorkSession,
     confirmDecision,
     confirmDelete,
     decisionTarget,
     deleteTarget,
     entries,
     error,
+    finalizeWorkSession,
     filters,
-    finishNow,
     form,
     isDeciding,
     isDeleting,
+    isFinishingSession,
     isLoading,
+    isLoadingPendingTasks,
     isLoadingSummary,
     isLoadingTasks,
     isSaving,
     loadEntries,
-    modalState,
+    manualModalState,
     notice,
     openCreateModal,
     openDecisionModal,
     openDeleteModal,
+    openManualEntryForTask,
+    openWorkSessionForTask,
+    pauseWorkSession,
+    pendingTasks,
     projectOptions,
+    resumeWorkSession,
     scope,
     setFilters,
-    startNow,
     submitTimeEntry,
     summary,
     taskOptions,
     updateForm,
+    updateWorkSessionDescription,
+    workSession,
+  };
+}
+
+function mapPendingTask(project: Project, task: Task): PendingTaskWorkItem {
+  return {
+    clienteNombre: project.clienteNombre,
+    descripcion: task.descripcion,
+    empleadoAsignadoId: task.empleadoAsignadoId,
+    estado: task.estado,
+    fechaFinPlanificada: task.fechaFinPlanificada,
+    fechaInicioPlanificada: task.fechaInicioPlanificada,
+    horasPlanificadas: task.horasPlanificadas,
+    horasReales: task.horasReales,
+    id: task.id,
+    nombre: task.nombre,
+    proyectoCodigo: project.codigo,
+    proyectoId: project.id,
+    proyectoNombre: project.nombre,
   };
 }
 

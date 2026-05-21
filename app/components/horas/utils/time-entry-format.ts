@@ -1,4 +1,4 @@
-import type { TimeEntry } from "../types/time-entry";
+import type { PendingTaskWorkItem, TimeEntry } from "../types/time-entry";
 import { formatHours } from "./time-entry-form";
 
 export function formatTimeEntryDate(value: string) {
@@ -65,4 +65,17 @@ export function getTopProjectLabel(entries: TimeEntry[]) {
   const topProject = Array.from(byProject.entries()).sort((a, b) => b[1] - a[1])[0];
 
   return topProject ? `${topProject[0]} · ${formatHours(topProject[1])}` : "Sin datos";
+}
+
+export function getPendingTaskItems(tasks: PendingTaskWorkItem[]) {
+  return [...tasks].sort((left, right) => {
+    const leftDate = left.fechaFinPlanificada ?? "9999-12-31";
+    const rightDate = right.fechaFinPlanificada ?? "9999-12-31";
+
+    if (leftDate !== rightDate) {
+      return leftDate.localeCompare(rightDate);
+    }
+
+    return left.nombre.localeCompare(right.nombre);
+  });
 }

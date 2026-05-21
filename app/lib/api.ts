@@ -17,12 +17,15 @@ export type LoginPayload = {
 
 export type LoginResponse = {
   accessToken?: string;
+  empleadoId?: number;
   exp?: number;
   expiresAt?: number | string;
   expiresInSeconds?: number;
+  id?: number;
   refreshToken?: string;
   tipo?: string;
   rol?: string;
+  usuarioId?: number;
   mensaje: string;
   empresaId?: number;
   nombre?: string;

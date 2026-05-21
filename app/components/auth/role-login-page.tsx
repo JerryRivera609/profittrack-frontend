@@ -70,6 +70,7 @@ export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
         backendRole: response.rol,
         companyName: getCompanyName(normalizedRole, response.empresaId),
         displayName: response.nombre?.trim() || email.trim(),
+        empleadoId: response.empleadoId ?? response.usuarioId ?? response.id,
         email,
         empresaId: response.empresaId,
         expiresAt: getExpiresAtFromAuthResponse(

@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  BarChart3,
-  Clock3,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
-import { useMemo } from "react";
+import { BarChart3, Info, Plus, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { usePlatformAuth } from "../../platform/platform-auth-context";
 import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
@@ -18,57 +13,65 @@ import { TextField } from "../../ui/text-field";
 import { useTimeEntries } from "../hooks/use-time-entries";
 import { TimeEntryFormModal } from "./time-entry-form-modal";
 import { TimeEntryList } from "./time-entry-list";
-import { buildStatsFromSummary, formatHours } from "../utils/time-entry-form";
-import { getTopProjectLabel } from "../utils/time-entry-format";
+import { PendingTaskBoard } from "./pending-task-board";
+import { InfoModal } from "./info-modal";
+import { TimeSummaryStrip } from "./time-summary-strip";
+import { WorkSessionModal } from "./work-session-modal";
 
 export function TimeEntryManagement() {
   const { session } = usePlatformAuth();
+  const [infoOpen, setInfoOpen] = useState(false);
   const {
     closeDecisionModal,
     closeDeleteModal,
     closeFormModal,
+    closeWorkSession,
     confirmDecision,
     confirmDelete,
     decisionTarget,
     deleteTarget,
     entries,
     error,
+    finalizeWorkSession,
     filters,
-    finishNow,
     form,
     isDeciding,
     isDeleting,
+    isFinishingSession,
     isLoading,
+    isLoadingPendingTasks,
     isLoadingSummary,
     isLoadingTasks,
     isSaving,
     loadEntries,
-    modalState,
+    manualModalState,
     notice,
     openCreateModal,
     openDecisionModal,
     openDeleteModal,
+    openManualEntryForTask,
+    openWorkSessionForTask,
+    pauseWorkSession,
+    pendingTasks,
     projectOptions,
+    resumeWorkSession,
     scope,
     setFilters,
-    startNow,
     submitTimeEntry,
     summary,
     taskOptions,
     updateForm,
+    updateWorkSessionDescription,
+    workSession,
   } = useTimeEntries(session);
-
-  const stats = useMemo(() => buildStatsFromSummary(summary), [summary]);
-  const topProject = useMemo(() => getTopProjectLabel(entries), [entries]);
-  const visibleSummary = summary;
 
   return (
     <>
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">
-            <Button icon={<Plus className="size-4" />} onClick={openCreateModal}>
-              Registrar horas
+            <Button icon={<Plus className="size-4" />} onClick={() => openCreateModal()}>
+              Registro manual
             </Button>
             <Button
               disabled={isLoading || isLoadingSummary}
@@ -88,20 +91,51 @@ export function TimeEntryManagement() {
         }
         description={
           scope.isDeveloper
-            ? "Registra tiempo por tarea con temporizador o carga manual. Tus horas quedarán listas para aprobación."
-            : "Supervisa horas por proyecto, aprueba registros del equipo y controla el avance real del trabajo."
+            ? "Toma tiempo desde tus tareas pendientes, controla tu sesión en vivo y registra horas por tarea con una experiencia más operativa."
+            : "Supervisa registros por proyecto, revisa el historial del equipo y aprueba las horas desde una vista compacta."
         }
         eyebrow="Horas HH"
-        stats={stats}
         title="Control de horas hombre"
       >
         <div className="space-y-5">
           <StatusMessage message={notice} />
           <StatusMessage message={error} tone="error" />
 
-          <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-            <section className="space-y-5">
-              {scope.canApprove ? (
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div className="min-w-0 flex-1">
+              <TimeSummaryStrip isLoading={isLoadingSummary} summary={summary} />
+            </div>
+            {scope.isDeveloper ? (
+              <Button
+                icon={<Info className="size-4" />}
+                onClick={() => setInfoOpen(true)}
+                variant="secondary"
+              >
+                Flujo recomendado
+              </Button>
+            ) : null}
+          </div>
+
+          {scope.isDeveloper ? (
+            <div className="space-y-5">
+              <PendingTaskBoard
+                isLoading={isLoadingPendingTasks}
+                onManualEntry={openManualEntryForTask}
+                onStartTask={openWorkSessionForTask}
+                tasks={pendingTasks}
+              />
+              <TimeEntryList
+                canApprove={false}
+                entries={entries}
+                isLoading={isLoading}
+                onApprove={() => undefined}
+                onDelete={openDeleteModal}
+                onReject={() => undefined}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+              <section className="space-y-5">
                 <Panel>
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -109,10 +143,6 @@ export function TimeEntryManagement() {
                       <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
                         Vista por proyecto
                       </h3>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-right">
-                      <p className="text-xs font-medium uppercase text-slate-400">Top proyecto</p>
-                      <p className="text-sm font-semibold text-slate-900">{topProject}</p>
                     </div>
                   </div>
 
@@ -131,7 +161,6 @@ export function TimeEntryManagement() {
                       value={filters.proyectoId}
                     />
                     <TextField
-                      icon={<Clock3 className="size-4" />}
                       label="Fecha inicio"
                       onChange={(event) =>
                         setFilters((current) => ({
@@ -143,7 +172,6 @@ export function TimeEntryManagement() {
                       value={filters.fechaInicio}
                     />
                     <TextField
-                      icon={<Clock3 className="size-4" />}
                       label="Fecha fin"
                       onChange={(event) =>
                         setFilters((current) => ({
@@ -156,86 +184,32 @@ export function TimeEntryManagement() {
                     />
                   </div>
                 </Panel>
-              ) : (
+
+                <TimeEntryList
+                  canApprove={scope.canApprove}
+                  entries={entries}
+                  isLoading={isLoading}
+                  onApprove={(entry) => openDecisionModal(entry, "approve")}
+                  onDelete={openDeleteModal}
+                  onReject={(entry) => openDecisionModal(entry, "reject")}
+                />
+              </section>
+
+              <section className="space-y-5">
                 <Panel>
-                  <p className="text-sm font-medium text-slate-500">Modo de trabajo</p>
+                  <p className="text-sm font-medium text-slate-500">Vista corporativa</p>
                   <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
-                    Temporizador por tarea
+                    Aprobación compacta
                   </h3>
                   <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Registra tu tiempo por proyecto y tarea. Usa la captura automática de inicio y fin
-                    o corrige manualmente si trabajaste fuera del sistema.
+                    El panel superior resume registradas, aprobadas, pendientes y rechazadas
+                    sin ocupar demasiado espacio. Aquí el foco queda en revisar la tabla y
+                    actuar rápido.
                   </p>
                 </Panel>
-              )}
-
-              <TimeEntryList
-                canApprove={scope.canApprove}
-                entries={entries}
-                isLoading={isLoading}
-                onApprove={(entry) => openDecisionModal(entry, "approve")}
-                onDelete={openDeleteModal}
-                onReject={(entry) => openDecisionModal(entry, "reject")}
-              />
-            </section>
-
-            <section className="space-y-5">
-              <Panel>
-                <p className="text-sm font-medium text-slate-500">Resumen</p>
-                <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
-                  Estado de horas
-                </h3>
-                {isLoadingSummary ? (
-                  <p className="mt-4 text-sm text-slate-500">Actualizando resumen...</p>
-                ) : visibleSummary ? (
-                  <div className="mt-4 space-y-4">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-xs font-medium uppercase text-slate-400">
-                        Total registrado
-                      </p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-950">
-                        {formatHours(visibleSummary.totalHorasRegistradas)}
-                      </p>
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
-                      <MiniStat
-                        label="Aprobadas"
-                        value={formatHours(visibleSummary.totalHorasAprobadas)}
-                      />
-                      <MiniStat
-                        label="Pendientes"
-                        value={formatHours(visibleSummary.totalHorasPendientes)}
-                      />
-                      <MiniStat
-                        label="Rechazadas"
-                        value={formatHours(visibleSummary.totalHorasRechazadas)}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm text-slate-500">
-                    Todavía no hay datos suficientes para construir el resumen.
-                  </p>
-                )}
-              </Panel>
-
-              <Panel>
-                <p className="text-sm font-medium text-slate-500">Nota de producto</p>
-                <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
-                  Registro profesional por tarea
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Este flujo está pensado para productividad por proyecto, no para control de asistencia.
-                  El usuario registra su trabajo por tarea y luego un líder puede aprobarlo o rechazarlo.
-                </p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  La edición persistente del registro sigue pendiente de backend porque hoy no existe un
-                  endpoint general de actualización para `registro-horas`.
-                </p>
-              </Panel>
-            </section>
-          </div>
+              </section>
+            </div>
+          )}
         </div>
       </ModulePage>
 
@@ -243,14 +217,37 @@ export function TimeEntryManagement() {
         form={form}
         isLoadingTasks={isLoadingTasks}
         isSaving={isSaving}
-        modalState={modalState}
+        modalState={manualModalState}
         onChange={updateForm}
         onClose={closeFormModal}
-        onFinishNow={finishNow}
-        onStartNow={startNow}
+        onFinishNow={() => undefined}
+        onStartNow={() => undefined}
         onSubmit={submitTimeEntry}
         projectOptions={projectOptions}
+        showQuickCapture={false}
         taskOptions={taskOptions}
+      />
+
+      <WorkSessionModal
+        isSaving={isFinishingSession}
+        onClose={closeWorkSession}
+        onDescriptionChange={updateWorkSessionDescription}
+        onFinalize={() => void finalizeWorkSession()}
+        onPause={pauseWorkSession}
+        onResume={resumeWorkSession}
+        session={workSession}
+      />
+
+      <InfoModal
+        description={[
+          "1. Toma una tarea pendiente desde el tablero.",
+          "2. Inicia la sesión y deja correr el contador en tiempo real.",
+          "3. Pausa cuando necesites detenerte y continúa luego.",
+          "4. Finaliza para registrar las horas con comentario y descanso acumulado.",
+        ]}
+        onClose={() => setInfoOpen(false)}
+        open={infoOpen}
+        title="Flujo recomendado"
       />
 
       <ConfirmModal
@@ -291,14 +288,5 @@ export function TimeEntryManagement() {
         }
       />
     </>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase text-slate-400">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-950">{value}</p>
-    </div>
   );
 }

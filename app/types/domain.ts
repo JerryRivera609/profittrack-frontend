@@ -5,6 +5,7 @@ export type Session = {
   backendRole?: string;
   email: string;
   displayName: string;
+  empleadoId?: number;
   accessToken: string;
   apiToken?: string;
   companyName?: string;

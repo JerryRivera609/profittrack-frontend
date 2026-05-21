@@ -1,11 +1,13 @@
 import type { Session } from "../../../types/domain";
 import type {
   CreateTimeEntryPayload,
+  PendingTaskWorkItem,
   TimeEntry,
   TimeEntryFilters,
   TimeEntryFormValues,
   TimeEntryScope,
   TimeEntrySummary,
+  WorkSessionState,
 } from "../types/time-entry";
 
 const now = new Date();
@@ -53,6 +55,23 @@ export function createTimeEntryFilters(projectId = ""): TimeEntryFilters {
   };
 }
 
+export function createWorkSession(task: PendingTaskWorkItem): WorkSessionState {
+  const startedAt = new Date();
+
+  return {
+    accumulatedPauseMs: 0,
+    accumulatedWorkMs: 0,
+    descripcion: "",
+    fechaTrabajo: formatInputDate(startedAt),
+    lastResumedAt: startedAt.toISOString(),
+    open: true,
+    pausedAt: null,
+    startedAt: startedAt.toISOString(),
+    status: "running",
+    task,
+  };
+}
+
 export function updateTimeEntryFormValue(
   form: TimeEntryFormValues,
   key: keyof TimeEntryFormValues,
@@ -89,6 +108,16 @@ export function buildCreateTimeEntryPayload(
     minutosDescanso: Number.parseInt(form.minutosDescanso || "0", 10),
     proyectoId: Number.parseInt(form.proyectoId, 10),
     tareaId: Number.parseInt(form.tareaId, 10),
+  };
+}
+
+export function buildTimeEntryFormValuesFromTask(
+  projectId: number,
+  taskId: number,
+): TimeEntryFormValues {
+  return {
+    ...createTimeEntryFormValues(projectId.toString(), taskId.toString()),
+    horasTrabajadas: "0.00",
   };
 }
 
@@ -207,6 +236,18 @@ export function formatHours(value: number) {
   return `${value.toFixed(2)} h`;
 }
 
+export function formatDurationFromMs(value: number) {
+  const safeValue = Math.max(0, value);
+  const totalSeconds = Math.floor(safeValue / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export function formatInputDate(date: Date) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -223,6 +264,14 @@ export function formatDateTimeLocal(date: Date) {
   const minutes = `${date.getMinutes()}`.padStart(2, "0");
 
   return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+export function formatTimeOnly(date: Date) {
+  return new Intl.DateTimeFormat("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(date);
 }
 
 export function fromApiDateTime(value?: string | null) {
