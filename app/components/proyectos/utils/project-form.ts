@@ -102,7 +102,7 @@ export function buildUpdateProjectPayload(
     clienteId: Number.parseInt(form.clienteId, 10),
     codigo: form.codigo.trim(),
     descripcion: form.descripcion.trim(),
-    estado: form.estado.trim(),
+    estado: normalizeProjectStatus(form.estado),
     fechaFinPlanificada: form.fechaFinPlanificada,
     fechaInicioPlanificada: form.fechaInicioPlanificada,
     horasPlanificadas: Number.parseFloat(form.horasPlanificadas),
@@ -148,4 +148,26 @@ export function buildProjectLifecyclePayload(
 
 function normalizeDateInput(value?: string | null) {
   return value?.slice(0, 10) ?? "";
+}
+
+function normalizeProjectStatus(value: string) {
+  const normalized = value.trim().toUpperCase();
+
+  switch (normalized) {
+    case "PLANIFICADO":
+      return "PLANIFICADO";
+    case "EN_PROCESO":
+    case "EN PROCESO":
+      return "EN_PROCESO";
+    case "PAUSADO":
+      return "PAUSADO";
+    case "FINALIZADO":
+    case "FINALIZADA":
+    case "FINALIZADO/A":
+      return "FINALIZADO";
+    case "CANCELADO":
+      return "CANCELADO";
+    default:
+      return normalized;
+  }
 }

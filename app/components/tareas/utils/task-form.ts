@@ -85,7 +85,7 @@ export function buildUpdateTaskPayload(form: TaskFormValues): UpdateTaskPayload 
     horasPlanificadas: Number.parseFloat(form.horasPlanificadas),
     fechaInicioPlanificada: form.fechaInicioPlanificada,
     fechaFinPlanificada: form.fechaFinPlanificada,
-    estado: form.estado.trim(),
+    estado: normalizeTaskStatus(form.estado),
   };
 }
 
@@ -117,4 +117,22 @@ function normalizeDate(value?: string | null) {
 
 function normalizeId(value?: number | null) {
   return typeof value === "number" ? value.toString() : "";
+}
+
+function normalizeTaskStatus(value: string) {
+  const normalized = value.trim().toUpperCase();
+
+  switch (normalized) {
+    case "PENDIENTE":
+      return "PENDIENTE";
+    case "EN_CURSO":
+    case "EN CURSO":
+      return "EN_CURSO";
+    case "FINALIZADO":
+    case "FINALIZADA":
+    case "FINALIZADO/A":
+      return "FINALIZADO";
+    default:
+      return normalized;
+  }
 }
