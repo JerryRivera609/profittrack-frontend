@@ -18,6 +18,11 @@ export const projectService = {
       credentials: "omit",
       token,
     }),
+  listMine: (token?: string) =>
+    apiRequest<Project[]>("/api/proyectos/mis-proyectos", {
+      credentials: "include",
+      token,
+    }),
   remove: (id: number, token?: string) =>
     apiRequest<void>(`/api/proyectos/${id}`, {
       credentials: "include",

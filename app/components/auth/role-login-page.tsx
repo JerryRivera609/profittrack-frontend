@@ -70,6 +70,7 @@ export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
         backendRole: response.rol,
         companyName: getCompanyName(normalizedRole, response.empresaId),
         displayName: response.nombre?.trim() || email.trim(),
+        empleadoId: response.empleadoId ?? response.usuarioId ?? response.id,
         email,
         empresaId: response.empresaId,
         expiresAt: getExpiresAtFromAuthResponse(
@@ -148,10 +149,11 @@ export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
           <div className="mb-4">
             <p className="text-sm font-medium text-slate-500">Portal</p>
             <h2 className="text-xl font-semibold tracking-tight">
-              Un solo acceso para Admin y Owner
+              Un solo acceso para Owner y Desarrollador
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Detectamos tu rol automaticamente desde la respuesta del backend.
+              Si el backend responde owner, ingresas al portal owner. Cualquier otro
+              perfil entra al portal de desarrollador.
             </p>
           </div>
 

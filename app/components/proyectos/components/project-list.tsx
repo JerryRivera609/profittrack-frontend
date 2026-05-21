@@ -2,12 +2,13 @@
 
 import { Flag, FolderKanban, Pencil, Play, Trash2, UsersRound } from "lucide-react";
 import type { Project, ProjectLifecycleAction } from "../types/project";
-import { formatProjectDate } from "../utils/project-format";
+import { formatProjectDate, formatProjectStatus } from "../utils/project-format";
 import { Button } from "../../ui/button";
 import { EmptyState } from "../../ui/empty-state";
 import { Panel } from "../../ui/panel";
 
 type ProjectListProps = {
+  canManageProjects: boolean;
   companyLabel: string;
   isLoading: boolean;
   onDelete: (project: Project) => void;
@@ -18,6 +19,7 @@ type ProjectListProps = {
 };
 
 export function ProjectList({
+  canManageProjects,
   companyLabel,
   isLoading,
   onDelete,
@@ -63,7 +65,9 @@ export function ProjectList({
                   <th className="py-3 pr-4 font-medium">Relaciones</th>
                   <th className="py-3 pr-4 font-medium">Fechas</th>
                   <th className="py-3 pr-4 font-medium">Finanzas</th>
-                  <th className="py-3 text-right font-medium">Acciones</th>
+                  <th className="py-3 text-right font-medium">
+                    {canManageProjects ? "Acciones" : "Vista"}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -74,7 +78,7 @@ export function ProjectList({
                       <p className="text-slate-500">{project.codigo}</p>
                       <p className="text-xs text-slate-400">{project.descripcion}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Estado: {project.estado || "-"}
+                        Estado: {formatProjectStatus(project.estado)}
                       </p>
                     </td>
                     <td className="py-3 pr-4 text-slate-600">
@@ -95,47 +99,53 @@ export function ProjectList({
                       <p>Venta: {project.precioVenta}</p>
                     </td>
                     <td className="py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        {!project.fechaInicioReal ? (
+                      {canManageProjects ? (
+                        <div className="flex justify-end gap-2">
+                          {!project.fechaInicioReal ? (
+                            <Button
+                              icon={<Play className="size-4" />}
+                              onClick={() => onLifecycleAction(project, "start")}
+                              variant="primary"
+                            >
+                              Iniciar
+                            </Button>
+                          ) : null}
+                          {project.fechaInicioReal && !project.fechaFinReal ? (
+                            <Button
+                              icon={<Flag className="size-4" />}
+                              onClick={() => onLifecycleAction(project, "finish")}
+                              variant="secondary"
+                            >
+                              Finalizar
+                            </Button>
+                          ) : null}
                           <Button
-                            icon={<Play className="size-4" />}
-                            onClick={() => onLifecycleAction(project, "start")}
-                            variant="primary"
-                          >
-                            Iniciar
-                          </Button>
-                        ) : null}
-                        {project.fechaInicioReal && !project.fechaFinReal ? (
-                          <Button
-                            icon={<Flag className="size-4" />}
-                            onClick={() => onLifecycleAction(project, "finish")}
+                            icon={<UsersRound className="size-4" />}
+                            onClick={() => onManageEmployees(project)}
                             variant="secondary"
                           >
-                            Finalizar
+                            Equipo
                           </Button>
-                        ) : null}
-                        <Button
-                          icon={<UsersRound className="size-4" />}
-                          onClick={() => onManageEmployees(project)}
-                          variant="secondary"
-                        >
-                          Equipo
-                        </Button>
-                        <Button
-                          icon={<Pencil className="size-4" />}
-                          onClick={() => onEdit(project)}
-                          variant="secondary"
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          icon={<Trash2 className="size-4" />}
-                          onClick={() => onDelete(project)}
-                          variant="danger"
-                        >
-                          Eliminar
-                        </Button>
-                      </div>
+                          <Button
+                            icon={<Pencil className="size-4" />}
+                            onClick={() => onEdit(project)}
+                            variant="secondary"
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            icon={<Trash2 className="size-4" />}
+                            onClick={() => onDelete(project)}
+                            variant="danger"
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          Revisa este proyecto desde la vista de tareas para trabajar.
+                        </p>
+                      )}
                     </td>
                   </tr>
                 ))}

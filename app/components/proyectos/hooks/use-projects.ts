@@ -131,7 +131,10 @@ export function useProjects(session: Session) {
     setIsLoading(true);
 
     try {
-      const response = await projectService.list(session.apiToken);
+      const response =
+        session.role === "EMPLEADO"
+          ? await projectService.listMine(session.apiToken)
+          : await projectService.list(session.apiToken);
       setProjects(response ?? []);
     } catch (loadError) {
       setError(getErrorMessage(loadError));
