@@ -43,6 +43,7 @@ export function TaskManagement() {
     setForm,
     setSelectedProjectId,
     submitTask,
+    taskTypeOptions,
     tasks,
   } = useTasks(session);
 
@@ -117,6 +118,7 @@ export function TaskManagement() {
         onClose={closeFormModal}
         onSubmit={submitTask}
         projectOptions={projectOptions}
+        taskTypeOptions={taskTypeOptions}
       />
 
       <ConfirmModal

@@ -1,5 +1,5 @@
-import { ServiceTypeManagement } from "../../components/tipos-servicio/components/service-type-management";
+import { ConfigurationManagement } from "../../components/configuracion/components/configuration-management";
 
 export default function ConfiguracionPage() {
-  return <ServiceTypeManagement />;
+  return <ConfigurationManagement />;
 }

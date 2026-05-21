@@ -1,16 +1,15 @@
-import type { Task, TaskFormValues, TaskScope } from "../types/task";
+import type { Task, TaskFormValues } from "../types/task";
 
 export function validateTaskForm(
   form: TaskFormValues,
   task: Task | null,
-  _scope: TaskScope,
 ) {
   if (!form.proyectoId.trim()) {
     return "Selecciona un proyecto.";
   }
 
   if (!form.tipoTareaId.trim()) {
-    return "Completa el tipoTareaId.";
+    return "Selecciona un tipo de tarea.";
   }
 
   if (!form.empleadoAsignadoId.trim()) {

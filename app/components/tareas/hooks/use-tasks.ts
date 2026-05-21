@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
 import { employeeService } from "../../empleados/services/employee-service";
 import { projectService } from "../../proyectos/services/project-service";
+import { taskTypeService } from "../../tipos-tarea/services/task-type-service";
 import { validateTaskForm } from "../schema/task-schema";
 import { taskService } from "../services/task-service";
 import type {
@@ -47,15 +48,17 @@ export function useTasks(session: Session) {
   const [notice, setNotice] = useState("");
   const [projectOptions, setProjectOptions] = useState<TaskCatalogOption[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [taskTypeOptions, setTaskTypeOptions] = useState<TaskCatalogOption[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const loadCatalogs = useCallback(async () => {
     setIsLoadingCatalogs(true);
 
     try {
-      const [projectsResponse, employeesResponse] = await Promise.all([
+      const [projectsResponse, employeesResponse, taskTypesResponse] = await Promise.all([
         projectService.list(session.apiToken),
         employeeService.list(session.apiToken),
+        taskTypeService.list(session.apiToken),
       ]);
 
       const scopedProjects = (projectsResponse ?? []).filter((project) =>
@@ -68,6 +71,11 @@ export function useTasks(session: Session) {
         scope.isAdmin || !scope.sessionEmpresaId
           ? true
           : employee.empresaId === scope.sessionEmpresaId,
+      );
+      const scopedTaskTypes = (taskTypesResponse ?? []).filter((taskType) =>
+        scope.isAdmin || !scope.sessionEmpresaId
+          ? true
+          : taskType.empresaId === scope.sessionEmpresaId,
       );
 
       const nextProjectOptions = scopedProjects.map((project) => ({
@@ -82,6 +90,14 @@ export function useTasks(session: Session) {
           description: `${employee.nombreRol} · ${employee.correo}`,
           label: `${employee.nombres} ${employee.apellidos}`,
           value: employee.id.toString(),
+        })),
+      );
+
+      setTaskTypeOptions(
+        scopedTaskTypes.map((taskType) => ({
+          description: `${taskType.nombreEmpresa} - ID ${taskType.empresaId}`,
+          label: taskType.nombre,
+          value: taskType.id.toString(),
         })),
       );
 
@@ -191,7 +207,7 @@ export function useTasks(session: Session) {
   }
 
   async function submitTask() {
-    const validationError = validateTaskForm(form, modalState.task, scope);
+    const validationError = validateTaskForm(form, modalState.task);
 
     if (validationError) {
       setError(validationError);
@@ -305,6 +321,7 @@ export function useTasks(session: Session) {
     setForm,
     setSelectedProjectId,
     submitTask,
+    taskTypeOptions,
     tasks,
   };
 }

@@ -6,10 +6,13 @@ import { clientService } from "../../clientes/services/client-service";
 import { employeeService } from "../../empleados/services/employee-service";
 import { serviceTypeService } from "../../tipos-servicio/services/service-type-service";
 import { validateProjectForm } from "../schema/project-schema";
+import { projectEmployeeService } from "../services/project-employee-service";
 import { projectService } from "../services/project-service";
 import type {
   Project,
   ProjectCatalogOption,
+  ProjectEmployeeAssignment,
+  ProjectEmployeeAssignmentFormValues,
   ProjectFormValues,
   ProjectLifecycleAction,
   ProjectModalState,
@@ -29,19 +32,35 @@ const closedModalState: ProjectModalState = {
   project: null,
 };
 
+const emptyAssignmentForm: ProjectEmployeeAssignmentFormValues = {
+  empleadoId: "",
+  rolAsignado: "",
+};
+
 export function useProjects(session: Session) {
   const scope = useMemo(() => createProjectScope(session), [session]);
+  const [assignmentError, setAssignmentError] = useState("");
+  const [assignmentForm, setAssignmentForm] =
+    useState<ProjectEmployeeAssignmentFormValues>(emptyAssignmentForm);
+  const [assignmentNotice, setAssignmentNotice] = useState("");
+  const [assignmentProject, setAssignmentProject] = useState<Project | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [error, setError] = useState("");
   const [form, setForm] = useState<ProjectFormValues>(() =>
     createProjectFormValues(null, session),
   );
+  const [isAssigningEmployee, setIsAssigningEmployee] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRemovingAssignment, setIsRemovingAssignment] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [modalState, setModalState] = useState<ProjectModalState>(closedModalState);
   const [notice, setNotice] = useState("");
+  const [projectAssignments, setProjectAssignments] = useState<
+    ProjectEmployeeAssignment[]
+  >([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [clientOptions, setClientOptions] = useState<ProjectCatalogOption[]>([]);
   const [lifecycleTarget, setLifecycleTarget] = useState<{
@@ -121,6 +140,26 @@ export function useProjects(session: Session) {
     }
   }, [session.apiToken]);
 
+  const loadProjectAssignments = useCallback(
+    async (projectId: number) => {
+      setAssignmentError("");
+      setIsLoadingAssignments(true);
+
+      try {
+        const response = await projectEmployeeService.listByProject(
+          projectId,
+          session.apiToken,
+        );
+        setProjectAssignments(response ?? []);
+      } catch (loadError) {
+        setAssignmentError(getErrorMessage(loadError));
+      } finally {
+        setIsLoadingAssignments(false);
+      }
+    },
+    [session.apiToken],
+  );
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void loadProjects();
@@ -177,6 +216,26 @@ export function useProjects(session: Session) {
     setLifecycleTarget({ action, project });
     setError("");
     setNotice("");
+  }
+
+  function openAssignmentsModal(project: Project) {
+    setAssignmentProject(project);
+    setAssignmentForm(emptyAssignmentForm);
+    setAssignmentError("");
+    setAssignmentNotice("");
+    void loadProjectAssignments(project.id);
+  }
+
+  function closeAssignmentsModal() {
+    if (isAssigningEmployee || isRemovingAssignment) {
+      return;
+    }
+
+    setAssignmentProject(null);
+    setAssignmentForm(emptyAssignmentForm);
+    setAssignmentError("");
+    setAssignmentNotice("");
+    setProjectAssignments([]);
   }
 
   function closeLifecycleModal() {
@@ -288,18 +347,90 @@ export function useProjects(session: Session) {
     }
   }
 
+  async function submitProjectEmployeeAssignment() {
+    if (!assignmentProject) {
+      return false;
+    }
+
+    if (!assignmentForm.empleadoId.trim()) {
+      setAssignmentError("Selecciona un empleado.");
+      setAssignmentNotice("");
+      return false;
+    }
+
+    if (!assignmentForm.rolAsignado.trim()) {
+      setAssignmentError("Completa el rol asignado.");
+      setAssignmentNotice("");
+      return false;
+    }
+
+    setAssignmentError("");
+    setAssignmentNotice("");
+    setIsAssigningEmployee(true);
+
+    try {
+      await projectEmployeeService.assign(
+        {
+          empleadoId: Number.parseInt(assignmentForm.empleadoId, 10),
+          proyectoId: assignmentProject.id,
+          rolAsignado: assignmentForm.rolAsignado.trim(),
+        },
+        session.apiToken,
+      );
+      setAssignmentNotice("Empleado asignado al proyecto.");
+      setAssignmentForm(emptyAssignmentForm);
+      await loadProjectAssignments(assignmentProject.id);
+      return true;
+    } catch (assignError) {
+      setAssignmentError(getErrorMessage(assignError));
+      return false;
+    } finally {
+      setIsAssigningEmployee(false);
+    }
+  }
+
+  async function removeProjectEmployeeAssignment(
+    assignment: ProjectEmployeeAssignment,
+  ) {
+    if (!assignmentProject) {
+      return;
+    }
+
+    setAssignmentError("");
+    setAssignmentNotice("");
+    setIsRemovingAssignment(true);
+
+    try {
+      await projectEmployeeService.remove(assignment.id, session.apiToken);
+      setAssignmentNotice("Asignacion eliminada.");
+      await loadProjectAssignments(assignmentProject.id);
+    } catch (removeError) {
+      setAssignmentError(getErrorMessage(removeError));
+    } finally {
+      setIsRemovingAssignment(false);
+    }
+  }
+
   return {
+    assignmentError,
+    assignmentForm,
+    assignmentNotice,
+    assignmentProject,
     closeDeleteModal,
     closeFormModal,
+    closeAssignmentsModal,
     closeLifecycleModal,
     confirmLifecycleAction,
     confirmDelete,
     deleteTarget,
     error,
     form,
+    isAssigningEmployee,
     isDeleting,
+    isLoadingAssignments,
     isLoadingCatalogs,
     isLoading,
+    isRemovingAssignment,
     isSaving,
     clientOptions,
     lifecycleTarget,
@@ -308,13 +439,18 @@ export function useProjects(session: Session) {
     modalState,
     notice,
     openCreateModal,
+    openAssignmentsModal,
     openDeleteModal,
     openEditModal,
     openLifecycleModal,
+    projectAssignments,
     projects: visibleProjects,
+    removeProjectEmployeeAssignment,
     serviceTypeOptions,
+    setAssignmentForm,
     scope,
     setForm,
+    submitProjectEmployeeAssignment,
     submitProject,
   };
 }

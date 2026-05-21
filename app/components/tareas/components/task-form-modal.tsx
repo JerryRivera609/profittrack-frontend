@@ -5,7 +5,6 @@ import {
   ClipboardCheck,
   Clock3,
   FileText,
-  Hash,
   UserRound,
 } from "lucide-react";
 import type { FormEvent } from "react";
@@ -39,6 +38,7 @@ type TaskFormModalProps = {
   onClose: () => void;
   onSubmit: () => void;
   projectOptions: TaskCatalogOption[];
+  taskTypeOptions: TaskCatalogOption[];
 };
 
 export function TaskFormModal({
@@ -51,6 +51,7 @@ export function TaskFormModal({
   onClose,
   onSubmit,
   projectOptions,
+  taskTypeOptions,
 }: TaskFormModalProps) {
   const isEdit = modalState.mode === "edit";
 
@@ -90,13 +91,15 @@ export function TaskFormModal({
               required
               value={form.proyectoId}
             />
-            <TextField
-              icon={<Hash className="size-4" />}
-              label="Tipo tarea ID"
-              min="1"
-              onChange={(event) => onChange("tipoTareaId", event.target.value)}
+            <SmartSelectField
+              disabled={isLoadingCatalogs || taskTypeOptions.length === 0}
+              helperText="Selecciona el catalogo que clasifica esta tarea."
+              icon={<ClipboardCheck className="size-4" />}
+              label="Tipo de tarea"
+              onChange={(selectedValue) => onChange("tipoTareaId", selectedValue)}
+              options={taskTypeOptions}
+              placeholder={isLoadingCatalogs ? "Cargando tipos..." : "Selecciona un tipo"}
               required
-              type="number"
               value={form.tipoTareaId}
             />
             <SmartSelectField

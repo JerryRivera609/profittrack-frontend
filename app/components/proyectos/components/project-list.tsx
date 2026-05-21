@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, FolderKanban, Pencil, Play, Trash2 } from "lucide-react";
+import { Flag, FolderKanban, Pencil, Play, Trash2, UsersRound } from "lucide-react";
 import type { Project, ProjectLifecycleAction } from "../types/project";
 import { formatProjectDate } from "../utils/project-format";
 import { Button } from "../../ui/button";
@@ -13,6 +13,7 @@ type ProjectListProps = {
   onDelete: (project: Project) => void;
   onEdit: (project: Project) => void;
   onLifecycleAction: (project: Project, action: ProjectLifecycleAction) => void;
+  onManageEmployees: (project: Project) => void;
   projects: Project[];
 };
 
@@ -22,6 +23,7 @@ export function ProjectList({
   onDelete,
   onEdit,
   onLifecycleAction,
+  onManageEmployees,
   projects,
 }: ProjectListProps) {
   return (
@@ -112,6 +114,13 @@ export function ProjectList({
                             Finalizar
                           </Button>
                         ) : null}
+                        <Button
+                          icon={<UsersRound className="size-4" />}
+                          onClick={() => onManageEmployees(project)}
+                          variant="secondary"
+                        >
+                          Equipo
+                        </Button>
                         <Button
                           icon={<Pencil className="size-4" />}
                           onClick={() => onEdit(project)}
