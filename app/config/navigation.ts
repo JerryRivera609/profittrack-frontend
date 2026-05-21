@@ -2,14 +2,10 @@ import {
   BriefcaseBusiness,
   Building2,
   ClipboardCheck,
-  Clock3,
-  FileChartColumn,
   FolderKanban,
-  Landmark,
   LayoutDashboard,
   ReceiptText,
   Settings,
-  ShieldCheck,
   UserRoundCog,
   UsersRound,
 } from "lucide-react";
@@ -33,7 +29,7 @@ export const roleLabels: Record<UserRole, string> = {
 
 export const roleHome: Record<UserRole, string> = {
   ADMIN: "/empresas",
-  EMPLEADO: "/horas",
+  EMPLEADO: "/tareas",
   LIDER: "/proyectos",
   OWNER: "/dashboard",
 };
@@ -89,39 +85,11 @@ export const navigationItems: NavigationItem[] = [
     roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
   },
   {
-    description: "Registro y aprobacion de horas hombre.",
-    href: "/horas",
-    icon: Clock3,
-    label: "Horas HH",
-    roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
-  },
-  {
-    description: "Ingresos, gastos, rentabilidad y centros de costo.",
-    href: "/finanzas",
-    icon: Landmark,
-    label: "Finanzas",
-    roles: ["ADMIN", "OWNER"],
-  },
-  {
     description: "Planillas, pagos, descuentos y cierres mensuales.",
     href: "/planillas",
     icon: ReceiptText,
     label: "Planillas",
     roles: ["ADMIN", "OWNER"],
-  },
-  {
-    description: "Reportes ejecutivos y analitica por modulo.",
-    href: "/reportes",
-    icon: FileChartColumn,
-    label: "Reportes",
-    roles: ["ADMIN", "OWNER", "LIDER"],
-  },
-  {
-    description: "Eventos sensibles, cambios y trazabilidad.",
-    href: "/auditoria",
-    icon: ShieldCheck,
-    label: "Auditoria",
-    roles: ["ADMIN"],
   },
   {
     description: "Roles, permisos, integraciones y parametros.",
@@ -133,10 +101,10 @@ export const navigationItems: NavigationItem[] = [
 ];
 
 export const roleCapabilities: Record<UserRole, string[]> = {
-  ADMIN: ["Todo el sistema", "Empresas", "Usuarios", "Auditoria"],
-  EMPLEADO: ["Mis tareas", "Mis horas HH"],
-  LIDER: ["Proyectos", "Tareas", "Aprobacion HH"],
-  OWNER: ["Mi empresa", "Equipo", "Finanzas", "Reportes"],
+  ADMIN: ["Empresas", "Usuarios", "Catalogos", "Proyectos"],
+  EMPLEADO: ["Mis tareas"],
+  LIDER: ["Proyectos", "Tareas"],
+  OWNER: ["Mi empresa", "Equipo", "Proyectos", "Planillas"],
 };
 
 export const portalOptions = [
