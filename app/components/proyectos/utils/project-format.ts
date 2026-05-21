@@ -25,9 +25,24 @@ export function getProjectStats(projects: Project[]): ProjectStats[] {
     },
     {
       label: "En curso",
-      value: projects.filter((project) =>
-        project.estado?.toLowerCase().includes("curso"),
-      ).length.toString(),
+      value: projects.filter((project) => project.estado === "EN_PROCESO").length.toString(),
     },
   ];
+}
+
+export function formatProjectStatus(value?: string | null) {
+  switch (value) {
+    case "PLANIFICADO":
+      return "Planificado";
+    case "EN_PROCESO":
+      return "En proceso";
+    case "PAUSADO":
+      return "Pausado";
+    case "FINALIZADO":
+      return "Finalizado";
+    case "CANCELADO":
+      return "Cancelado";
+    default:
+      return value || "-";
+  }
 }

@@ -125,7 +125,7 @@ export function buildProjectLifecyclePayload(
     clienteId: project.clienteId,
     codigo: project.codigo,
     descripcion: project.descripcion,
-    estado: action === "start" ? "En curso" : "Finalizado",
+    estado: action === "start" ? "EN_PROCESO" : "FINALIZADO",
     fechaFinPlanificada: normalizeDateInput(project.fechaFinPlanificada),
     fechaFinReal:
       action === "finish"

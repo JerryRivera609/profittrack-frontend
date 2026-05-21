@@ -16,6 +16,7 @@ import { ProjectList } from "./project-list";
 
 export function ProjectManagement() {
   const { session } = usePlatformAuth();
+  const canManageProjects = session.role !== "EMPLEADO";
   const {
     assignmentError,
     assignmentForm,
@@ -73,9 +74,11 @@ export function ProjectManagement() {
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">
-            <Button icon={<Plus className="size-4" />} onClick={openCreateModal}>
-              Nuevo proyecto
-            </Button>
+            {canManageProjects ? (
+              <Button icon={<Plus className="size-4" />} onClick={openCreateModal}>
+                Nuevo proyecto
+              </Button>
+            ) : null}
             <Button
               disabled={isLoading}
               icon={<RefreshCw className={isLoading ? "size-4 animate-spin" : "size-4"} />}
@@ -87,7 +90,9 @@ export function ProjectManagement() {
           </div>
         }
         description={
-          scope.isAdmin
+          session.role === "EMPLEADO"
+            ? "Consulta los proyectos que tienes asignados y entra a sus tareas para trabajar."
+            : scope.isAdmin
             ? "Administra proyectos de todas las empresas con un flujo estandar de altas, ediciones y bajas."
             : `Administra los proyectos de ${session.companyName ?? "tu empresa"} con un flujo estandar de altas, ediciones y bajas.`
         }
@@ -106,6 +111,7 @@ export function ProjectManagement() {
           <StatusMessage message={error} tone="error" />
 
           <ProjectList
+            canManageProjects={canManageProjects}
             companyLabel={scope.isAdmin ? "Todas" : session.companyName ?? "Tu empresa"}
             isLoading={isLoading}
             onDelete={openDeleteModal}
@@ -117,82 +123,90 @@ export function ProjectManagement() {
         </div>
       </ModulePage>
 
-      <ProjectFormModal
-        clientOptions={clientOptions}
-        form={form}
-        isLoadingCatalogs={isLoadingCatalogs}
-        isSaving={isSaving}
-        leaderOptions={leaderOptions}
-        modalState={modalState}
-        onChange={(key, value) =>
-          setForm((current) => updateProjectFormValue(current, key, value))
-        }
-        onClose={closeFormModal}
-        onSubmit={submitProject}
-        serviceTypeOptions={serviceTypeOptions}
-        scope={scope}
-      />
+      {canManageProjects ? (
+        <ProjectFormModal
+          clientOptions={clientOptions}
+          form={form}
+          isLoadingCatalogs={isLoadingCatalogs}
+          isSaving={isSaving}
+          leaderOptions={leaderOptions}
+          modalState={modalState}
+          onChange={(key, value) =>
+            setForm((current) => updateProjectFormValue(current, key, value))
+          }
+          onClose={closeFormModal}
+          onSubmit={submitProject}
+          serviceTypeOptions={serviceTypeOptions}
+          scope={scope}
+        />
+      ) : null}
 
-      <ProjectEmployeesModal
-        assignments={projectAssignments}
-        employeeOptions={availableEmployeeOptions}
-        error={assignmentError}
-        form={assignmentForm}
-        isAssigning={isAssigningEmployee}
-        isLoading={isLoadingAssignments}
-        isRemoving={isRemovingAssignment}
-        notice={assignmentNotice}
-        onChange={(key, value) =>
-          setAssignmentForm((current) => ({
-            ...current,
-            [key]: value,
-          }))
-        }
-        onClose={closeAssignmentsModal}
-        onRemove={(assignment) => void removeProjectEmployeeAssignment(assignment)}
-        onSubmit={submitProjectEmployeeAssignment}
-        project={assignmentProject}
-      />
+      {canManageProjects ? (
+        <ProjectEmployeesModal
+          assignments={projectAssignments}
+          employeeOptions={availableEmployeeOptions}
+          error={assignmentError}
+          form={assignmentForm}
+          isAssigning={isAssigningEmployee}
+          isLoading={isLoadingAssignments}
+          isRemoving={isRemovingAssignment}
+          notice={assignmentNotice}
+          onChange={(key, value) =>
+            setAssignmentForm((current) => ({
+              ...current,
+              [key]: value,
+            }))
+          }
+          onClose={closeAssignmentsModal}
+          onRemove={(assignment) => void removeProjectEmployeeAssignment(assignment)}
+          onSubmit={submitProjectEmployeeAssignment}
+          project={assignmentProject}
+        />
+      ) : null}
 
-      <ConfirmModal
-        confirmLabel="Eliminar proyecto"
-        description={
-          deleteTarget
-            ? `Se eliminara ${deleteTarget.nombre} del portafolio de proyectos.`
-            : ""
-        }
-        isLoading={isDeleting}
-        onClose={closeDeleteModal}
-        onConfirm={() => void confirmDelete()}
-        open={Boolean(deleteTarget)}
-        title={deleteTarget ? `Eliminar ${deleteTarget.nombre}` : "Eliminar proyecto"}
-      />
+      {canManageProjects ? (
+        <ConfirmModal
+          confirmLabel="Eliminar proyecto"
+          description={
+            deleteTarget
+              ? `Se eliminara ${deleteTarget.nombre} del portafolio de proyectos.`
+              : ""
+          }
+          isLoading={isDeleting}
+          onClose={closeDeleteModal}
+          onConfirm={() => void confirmDelete()}
+          open={Boolean(deleteTarget)}
+          title={deleteTarget ? `Eliminar ${deleteTarget.nombre}` : "Eliminar proyecto"}
+        />
+      ) : null}
 
-      <ConfirmModal
-        confirmLabel={
-          lifecycleTarget?.action === "start"
-            ? "Iniciar proyecto"
-            : "Finalizar proyecto"
-        }
-        description={
-          lifecycleTarget
-            ? lifecycleTarget.action === "start"
-              ? `Se registrara el inicio real de ${lifecycleTarget.project.nombre} con la fecha de hoy.`
-              : `Se registrara el cierre real de ${lifecycleTarget.project.nombre} con la fecha de hoy.`
-            : ""
-        }
-        isLoading={isSaving}
-        onClose={closeLifecycleModal}
-        onConfirm={() => void confirmLifecycleAction()}
-        open={Boolean(lifecycleTarget)}
-        title={
-          lifecycleTarget
-            ? lifecycleTarget.action === "start"
-              ? `Iniciar ${lifecycleTarget.project.nombre}`
-              : `Finalizar ${lifecycleTarget.project.nombre}`
-            : "Confirmar accion"
-        }
-      />
+      {canManageProjects ? (
+        <ConfirmModal
+          confirmLabel={
+            lifecycleTarget?.action === "start"
+              ? "Iniciar proyecto"
+              : "Finalizar proyecto"
+          }
+          description={
+            lifecycleTarget
+              ? lifecycleTarget.action === "start"
+                ? `Se registrara el inicio real de ${lifecycleTarget.project.nombre} con la fecha de hoy.`
+                : `Se registrara el cierre real de ${lifecycleTarget.project.nombre} con la fecha de hoy.`
+              : ""
+          }
+          isLoading={isSaving}
+          onClose={closeLifecycleModal}
+          onConfirm={() => void confirmLifecycleAction()}
+          open={Boolean(lifecycleTarget)}
+          title={
+            lifecycleTarget
+              ? lifecycleTarget.action === "start"
+                ? `Iniciar ${lifecycleTarget.project.nombre}`
+                : `Finalizar ${lifecycleTarget.project.nombre}`
+              : "Confirmar accion"
+          }
+        />
+      ) : null}
     </>
   );
 }
