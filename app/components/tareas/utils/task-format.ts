@@ -16,7 +16,20 @@ export function getTaskStats(tasks: Task[]): TaskStats[] {
     },
     {
       label: "En curso",
-      value: tasks.filter((task) => task.estado?.toLowerCase().includes("curso")).length.toString(),
+      value: tasks.filter((task) => task.estado === "EN_CURSO").length.toString(),
     },
   ];
+}
+
+export function formatTaskStatus(value?: string | null) {
+  switch (value) {
+    case "PENDIENTE":
+      return "Pendiente";
+    case "EN_CURSO":
+      return "En curso";
+    case "FINALIZADO":
+      return "Finalizado";
+    default:
+      return value || "-";
+  }
 }

@@ -107,7 +107,7 @@ export function buildTaskLifecyclePayload(
       action === "start" ? today : normalizeDate(task.fechaInicioReal) || undefined,
     fechaFinReal:
       action === "finish" ? today : normalizeDate(task.fechaFinReal) || undefined,
-    estado: action === "start" ? "En curso" : "Finalizada",
+    estado: action === "start" ? "EN_CURSO" : "FINALIZADO",
   };
 }
 

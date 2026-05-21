@@ -144,23 +144,16 @@ export function normalizeBackendRole(
   const normalizedRole = backendRole?.trim().toLowerCase();
   const normalizedType = backendType?.trim().toLowerCase();
 
-  if (normalizedRole === "administrador") {
-    return "ADMIN";
-  }
-
   if (normalizedRole === "owner") {
     return "OWNER";
-  }
-
-  if (normalizedType === "administrador" || normalizedType === "admin") {
-    return "ADMIN";
   }
 
   if (normalizedType === "duenio" || normalizedType === "owner") {
     return "OWNER";
   }
 
-  return null;
+  // Cualquier otro perfil autenticado entra al portal de desarrollador.
+  return normalizedRole || normalizedType ? "EMPLEADO" : null;
 }
 
 export function getExpiresAtFromAuthResponse(

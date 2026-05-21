@@ -2,7 +2,7 @@
 
 import { ClipboardCheck, Flag, Pencil, Play, Trash2 } from "lucide-react";
 import type { Task, TaskLifecycleAction } from "../types/task";
-import { formatTaskDate } from "../utils/task-format";
+import { formatTaskDate, formatTaskStatus } from "../utils/task-format";
 import { Button } from "../../ui/button";
 import { EmptyState } from "../../ui/empty-state";
 import { Panel } from "../../ui/panel";
@@ -77,7 +77,7 @@ export function TaskList({
                     </td>
                     <td className="py-3 pr-4">
                       <p className={task.activo ? "text-emerald-700" : "text-rose-700"}>
-                        {task.estado || (task.activo ? "Activa" : "Inactiva")}
+                        {formatTaskStatus(task.estado || (task.activo ? "PENDIENTE" : "INACTIVA"))}
                       </p>
                     </td>
                     <td className="py-3 text-right">

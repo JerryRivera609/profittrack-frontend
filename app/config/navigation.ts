@@ -2,6 +2,7 @@ import {
   BriefcaseBusiness,
   Building2,
   ClipboardCheck,
+  Clock3,
   FolderKanban,
   LayoutDashboard,
   ReceiptText,
@@ -22,14 +23,14 @@ export type NavigationItem = {
 
 export const roleLabels: Record<UserRole, string> = {
   ADMIN: "Administrador",
-  EMPLEADO: "Empleado",
+  EMPLEADO: "Desarrollador",
   LIDER: "Lider",
   OWNER: "Owner",
 };
 
 export const roleHome: Record<UserRole, string> = {
   ADMIN: "/empresas",
-  EMPLEADO: "/tareas",
+  EMPLEADO: "/proyectos",
   LIDER: "/proyectos",
   OWNER: "/dashboard",
 };
@@ -75,7 +76,7 @@ export const navigationItems: NavigationItem[] = [
     href: "/proyectos",
     icon: FolderKanban,
     label: "Proyectos",
-    roles: ["ADMIN", "OWNER", "LIDER"],
+    roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
   },
   {
     description: "Tablero de tareas, prioridades y responsables.",
@@ -83,6 +84,13 @@ export const navigationItems: NavigationItem[] = [
     icon: ClipboardCheck,
     label: "Tareas",
     roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
+  },
+  {
+    description: "Registro de tiempo trabajado por tarea y aprobacion del lider.",
+    href: "/horas",
+    icon: Clock3,
+    label: "Horas HH",
+    roles: ["LIDER", "EMPLEADO"],
   },
   {
     description: "Planillas, pagos, descuentos y cierres mensuales.",
@@ -102,7 +110,7 @@ export const navigationItems: NavigationItem[] = [
 
 export const roleCapabilities: Record<UserRole, string[]> = {
   ADMIN: ["Empresas", "Usuarios", "Catalogos", "Proyectos"],
-  EMPLEADO: ["Mis tareas"],
+  EMPLEADO: ["Mis proyectos", "Mis tareas"],
   LIDER: ["Proyectos", "Tareas"],
   OWNER: ["Mi empresa", "Equipo", "Proyectos", "Planillas"],
 };
@@ -123,7 +131,7 @@ export const portalOptions = [
   {
     href: "/empleados/login",
     icon: UsersRound,
-    label: "Empleado",
+    label: "Desarrollador",
     role: "EMPLEADO" as const,
   },
 ];
