@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderKanban, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { usePlatformAuth } from "../../platform/platform-auth-context";
 import { ModulePage } from "../../platform/module-page";
@@ -10,12 +10,18 @@ import { StatusMessage } from "../../ui/status-message";
 import { useProjects } from "../hooks/use-projects";
 import { getProjectStats } from "../utils/project-format";
 import { updateProjectFormValue } from "../utils/project-form";
+import { ProjectEmployeesModal } from "./project-employees-modal";
 import { ProjectFormModal } from "./project-form-modal";
 import { ProjectList } from "./project-list";
 
 export function ProjectManagement() {
   const { session } = usePlatformAuth();
   const {
+    assignmentError,
+    assignmentForm,
+    assignmentNotice,
+    assignmentProject,
+    closeAssignmentsModal,
     closeDeleteModal,
     closeFormModal,
     closeLifecycleModal,
@@ -26,8 +32,11 @@ export function ProjectManagement() {
     form,
     clientOptions,
     isDeleting,
+    isAssigningEmployee,
+    isLoadingAssignments,
     isLoadingCatalogs,
     isLoading,
+    isRemovingAssignment,
     isSaving,
     leaderOptions,
     lifecycleTarget,
@@ -35,17 +44,29 @@ export function ProjectManagement() {
     modalState,
     notice,
     openCreateModal,
+    openAssignmentsModal,
     openDeleteModal,
     openEditModal,
     openLifecycleModal,
+    projectAssignments,
     projects,
+    removeProjectEmployeeAssignment,
     serviceTypeOptions,
+    setAssignmentForm,
     scope,
     setForm,
+    submitProjectEmployeeAssignment,
     submitProject,
   } = useProjects(session);
 
   const stats = useMemo(() => getProjectStats(projects), [projects]);
+  const availableEmployeeOptions = useMemo(() => {
+    const assignedEmployeeIds = new Set(
+      projectAssignments.map((assignment) => assignment.empleadoId.toString()),
+    );
+
+    return leaderOptions.filter((option) => !assignedEmployeeIds.has(option.value));
+  }, [leaderOptions, projectAssignments]);
 
   return (
     <>
@@ -90,6 +111,7 @@ export function ProjectManagement() {
             onDelete={openDeleteModal}
             onEdit={openEditModal}
             onLifecycleAction={openLifecycleModal}
+            onManageEmployees={openAssignmentsModal}
             projects={projects}
           />
         </div>
@@ -109,6 +131,27 @@ export function ProjectManagement() {
         onSubmit={submitProject}
         serviceTypeOptions={serviceTypeOptions}
         scope={scope}
+      />
+
+      <ProjectEmployeesModal
+        assignments={projectAssignments}
+        employeeOptions={availableEmployeeOptions}
+        error={assignmentError}
+        form={assignmentForm}
+        isAssigning={isAssigningEmployee}
+        isLoading={isLoadingAssignments}
+        isRemoving={isRemovingAssignment}
+        notice={assignmentNotice}
+        onChange={(key, value) =>
+          setAssignmentForm((current) => ({
+            ...current,
+            [key]: value,
+          }))
+        }
+        onClose={closeAssignmentsModal}
+        onRemove={(assignment) => void removeProjectEmployeeAssignment(assignment)}
+        onSubmit={submitProjectEmployeeAssignment}
+        project={assignmentProject}
       />
 
       <ConfirmModal

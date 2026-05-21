@@ -71,7 +71,7 @@ export function CalendarField({
         <button
           aria-expanded={open}
           className={cn(
-            "mt-1.5 flex min-h-12 w-full items-center gap-3 rounded-xl border bg-white px-4 py-1 text-left shadow-sm transition",
+            "mt-1.5 flex min-h-12 w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition",
             disabled
               ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
               : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus-visible:border-teal-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-100",
@@ -108,7 +108,7 @@ export function CalendarField({
       </label>
 
       {open && !disabled ? (
-        <div className="absolute left-0 z-[80] mt-2 w-full max-w-[18rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
           <div className="border-b border-slate-200 bg-slate-50 px-2 py-1">
             <div className="flex items-center justify-between gap-3">
               <button
@@ -151,7 +151,7 @@ export function CalendarField({
           </div>
 
           <div className="p-2">
-            <div className="mb-2 grid grid-cols-7 gap-0.5">
+            <div className="mb-3 grid grid-cols-7">
               {weekDays.map((day) => (
                 <div
                   className="px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400"
@@ -162,7 +162,7 @@ export function CalendarField({
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-0.5">
+            <div className="grid grid-cols-7">
               {monthMatrix.map((date) => {
                 const isSelected = isSameDay(date, selectedDate);
                 const isCurrentMonth = date.getMonth() === viewDate.getMonth();
@@ -171,9 +171,9 @@ export function CalendarField({
                 return (
                   <button
                     className={cn(
-                      "flex aspect-square items-center justify-center rounded-lg text-[11px] font-semibold transition",
+                      "flex aspect-square items-center justify-center rounded-xl text-xs font-semibold transition",
                       isSelected
-                        ? "bg-slate-950 text-white shadow-sm"
+                        ? "bg-slate-950 text-white shadow-[10px]"
                         : isCurrentMonth
                           ? "text-slate-700 hover:bg-slate-100"
                           : "text-slate-300 hover:bg-slate-50",

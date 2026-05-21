@@ -19,6 +19,8 @@ export function TaskManagement() {
   const {
     closeDeleteModal,
     closeFormModal,
+    closeLifecycleModal,
+    confirmLifecycleAction,
     confirmDelete,
     deleteTarget,
     employeeOptions,
@@ -28,17 +30,20 @@ export function TaskManagement() {
     isLoading,
     isLoadingCatalogs,
     isSaving,
+    lifecycleTarget,
     loadTasks,
     modalState,
     notice,
     openCreateModal,
     openDeleteModal,
     openEditModal,
+    openLifecycleModal,
     projectOptions,
     selectedProjectId,
     setForm,
     setSelectedProjectId,
     submitTask,
+    taskTypeOptions,
     tasks,
   } = useTasks(session);
 
@@ -95,6 +100,7 @@ export function TaskManagement() {
             isLoading={isLoading}
             onDelete={openDeleteModal}
             onEdit={openEditModal}
+            onLifecycleAction={openLifecycleModal}
             tasks={tasks}
           />
         </div>
@@ -112,6 +118,7 @@ export function TaskManagement() {
         onClose={closeFormModal}
         onSubmit={submitTask}
         projectOptions={projectOptions}
+        taskTypeOptions={taskTypeOptions}
       />
 
       <ConfirmModal
@@ -126,6 +133,30 @@ export function TaskManagement() {
         onConfirm={() => void confirmDelete()}
         open={Boolean(deleteTarget)}
         title={deleteTarget ? `Eliminar ${deleteTarget.nombre}` : "Eliminar tarea"}
+      />
+
+      <ConfirmModal
+        confirmLabel={
+          lifecycleTarget?.action === "start" ? "Iniciar tarea" : "Finalizar tarea"
+        }
+        description={
+          lifecycleTarget
+            ? lifecycleTarget.action === "start"
+              ? `Se registrara el inicio real de ${lifecycleTarget.task.nombre} con la fecha de hoy.`
+              : `Se registrara el cierre real de ${lifecycleTarget.task.nombre} con la fecha de hoy.`
+            : ""
+        }
+        isLoading={isSaving}
+        onClose={closeLifecycleModal}
+        onConfirm={() => void confirmLifecycleAction()}
+        open={Boolean(lifecycleTarget)}
+        title={
+          lifecycleTarget
+            ? lifecycleTarget.action === "start"
+              ? `Iniciar ${lifecycleTarget.task.nombre}`
+              : `Finalizar ${lifecycleTarget.task.nombre}`
+            : "Confirmar accion"
+        }
       />
     </>
   );

@@ -4,15 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
 import { employeeService } from "../../empleados/services/employee-service";
 import { projectService } from "../../proyectos/services/project-service";
+import { taskTypeService } from "../../tipos-tarea/services/task-type-service";
 import { validateTaskForm } from "../schema/task-schema";
 import { taskService } from "../services/task-service";
 import type {
   Task,
   TaskCatalogOption,
   TaskFormValues,
+  TaskLifecycleAction,
   TaskModalState,
 } from "../types/task";
 import {
+  buildTaskLifecyclePayload,
   buildCreateTaskPayload,
   buildUpdateTaskPayload,
   createTaskFormValues,
@@ -37,19 +40,25 @@ export function useTasks(session: Session) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [lifecycleTarget, setLifecycleTarget] = useState<{
+    action: TaskLifecycleAction;
+    task: Task;
+  } | null>(null);
   const [modalState, setModalState] = useState<TaskModalState>(closedModalState);
   const [notice, setNotice] = useState("");
   const [projectOptions, setProjectOptions] = useState<TaskCatalogOption[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [taskTypeOptions, setTaskTypeOptions] = useState<TaskCatalogOption[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const loadCatalogs = useCallback(async () => {
     setIsLoadingCatalogs(true);
 
     try {
-      const [projectsResponse, employeesResponse] = await Promise.all([
+      const [projectsResponse, employeesResponse, taskTypesResponse] = await Promise.all([
         projectService.list(session.apiToken),
         employeeService.list(session.apiToken),
+        taskTypeService.list(session.apiToken),
       ]);
 
       const scopedProjects = (projectsResponse ?? []).filter((project) =>
@@ -62,6 +71,11 @@ export function useTasks(session: Session) {
         scope.isAdmin || !scope.sessionEmpresaId
           ? true
           : employee.empresaId === scope.sessionEmpresaId,
+      );
+      const scopedTaskTypes = (taskTypesResponse ?? []).filter((taskType) =>
+        scope.isAdmin || !scope.sessionEmpresaId
+          ? true
+          : taskType.empresaId === scope.sessionEmpresaId,
       );
 
       const nextProjectOptions = scopedProjects.map((project) => ({
@@ -76,6 +90,14 @@ export function useTasks(session: Session) {
           description: `${employee.nombreRol} · ${employee.correo}`,
           label: `${employee.nombres} ${employee.apellidos}`,
           value: employee.id.toString(),
+        })),
+      );
+
+      setTaskTypeOptions(
+        scopedTaskTypes.map((taskType) => ({
+          description: `${taskType.nombreEmpresa} - ID ${taskType.empresaId}`,
+          label: taskType.nombre,
+          value: taskType.id.toString(),
         })),
       );
 
@@ -162,6 +184,20 @@ export function useTasks(session: Session) {
     setNotice("");
   }
 
+  function openLifecycleModal(task: Task, action: TaskLifecycleAction) {
+    setLifecycleTarget({ action, task });
+    setError("");
+    setNotice("");
+  }
+
+  function closeLifecycleModal() {
+    if (isSaving) {
+      return;
+    }
+
+    setLifecycleTarget(null);
+  }
+
   function closeDeleteModal() {
     if (isDeleting) {
       return;
@@ -171,7 +207,7 @@ export function useTasks(session: Session) {
   }
 
   async function submitTask() {
-    const validationError = validateTaskForm(form, modalState.task, scope);
+    const validationError = validateTaskForm(form, modalState.task);
 
     if (validationError) {
       setError(validationError);
@@ -228,9 +264,40 @@ export function useTasks(session: Session) {
     }
   }
 
+  async function confirmLifecycleAction() {
+    if (!lifecycleTarget) {
+      return;
+    }
+
+    setError("");
+    setNotice("");
+    setIsSaving(true);
+
+    try {
+      await taskService.update(
+        lifecycleTarget.task.id,
+        buildTaskLifecyclePayload(lifecycleTarget.task, lifecycleTarget.action),
+        session.apiToken,
+      );
+      setNotice(
+        lifecycleTarget.action === "start"
+          ? "Tarea iniciada."
+          : "Tarea finalizada.",
+      );
+      setLifecycleTarget(null);
+      await loadTasks();
+    } catch (actionError) {
+      setError(getErrorMessage(actionError));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return {
     closeDeleteModal,
     closeFormModal,
+    closeLifecycleModal,
+    confirmLifecycleAction,
     confirmDelete,
     deleteTarget,
     employeeOptions,
@@ -240,18 +307,21 @@ export function useTasks(session: Session) {
     isLoading,
     isLoadingCatalogs,
     isSaving,
+    lifecycleTarget,
     loadTasks,
     modalState,
     notice,
     openCreateModal,
     openDeleteModal,
     openEditModal,
+    openLifecycleModal,
     projectOptions,
     scope,
     selectedProjectId,
     setForm,
     setSelectedProjectId,
     submitTask,
+    taskTypeOptions,
     tasks,
   };
 }

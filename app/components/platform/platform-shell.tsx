@@ -38,9 +38,8 @@ type PlatformShellProps = {
 export function PlatformShell({ children }: PlatformShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [session, setSession] = useState<Session | null>(() =>
-    getStoredSession(),
-  );
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const allowedItems = useMemo(
@@ -56,13 +55,22 @@ export function PlatformShell({ children }: PlatformShellProps) {
     !currentItem || (session ? currentItem.roles.includes(session.role) : false);
 
   useEffect(() => {
+    setSession(getStoredSession());
+    setHasHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
     if (!session) {
       router.replace("/login");
     }
-  }, [router, session]);
+  }, [hasHydrated, router, session]);
 
   useEffect(() => {
-    if (!session) {
+    if (!hasHydrated || !session) {
       return;
     }
 
@@ -114,7 +122,7 @@ export function PlatformShell({ children }: PlatformShellProps) {
         window.clearTimeout(logoutTimeoutId);
       }
     };
-  }, [router, session]);
+  }, [hasHydrated, router, session]);
 
   function handleLogout() {
     if (!session) {
@@ -131,13 +139,17 @@ export function PlatformShell({ children }: PlatformShellProps) {
     router.replace(loginPath);
   }
 
-  if (!session) {
+  if (!hasHydrated || !session) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 text-slate-950">
         <div className="rounded-lg border border-slate-200 bg-white p-5 text-center shadow-sm">
-          <p className="font-semibold">Redirigiendo al login...</p>
+          <p className="font-semibold">
+            {hasHydrated ? "Redirigiendo al login..." : "Cargando sesion..."}
+          </p>
           <p className="mt-1 text-sm text-slate-500">
-            Necesitas iniciar sesion para continuar.
+            {hasHydrated
+              ? "Necesitas iniciar sesion para continuar."
+              : "Estamos preparando tu espacio de trabajo."}
           </p>
         </div>
       </main>

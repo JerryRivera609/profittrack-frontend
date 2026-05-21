@@ -99,6 +99,29 @@ export type ProjectCatalogOption = {
   value: string;
 };
 
+export type ProjectEmployeeAssignment = {
+  id: number;
+  proyectoId: number;
+  proyectoNombre: string;
+  empleadoId: number;
+  empleadoNombre: string;
+  rolAsignado: string;
+  fechaAsignacion: string;
+  costoHoraCongelado: number;
+  activo: boolean;
+};
+
+export type CreateProjectEmployeeAssignmentPayload = {
+  proyectoId: number;
+  empleadoId: number;
+  rolAsignado: string;
+};
+
+export type ProjectEmployeeAssignmentFormValues = {
+  empleadoId: string;
+  rolAsignado: string;
+};
+
 export type ProjectScope = {
   isAdmin: boolean;
   session: Session;

@@ -3,9 +3,9 @@ import type { Session } from "../../../types/domain";
 export type Task = {
   id: number;
   proyectoId: number;
-  tipoTareaId: number;
+  tipoTareaId?: number | null;
   tipoTareaNombre: string;
-  empleadoAsignadoId: number;
+  empleadoAsignadoId?: number | null;
   empleadoNombre: string;
   nombre: string;
   descripcion: string;
@@ -43,6 +43,8 @@ export type UpdateTaskPayload = {
   estado: string;
 };
 
+export type TaskLifecycleAction = "start" | "finish";
+
 export type TaskFormValues = {
   proyectoId: string;
   tipoTareaId: string;
@@ -52,8 +54,6 @@ export type TaskFormValues = {
   horasPlanificadas: string;
   fechaInicioPlanificada: string;
   fechaFinPlanificada: string;
-  fechaInicioReal: string;
-  fechaFinReal: string;
   estado: string;
 };
 
