@@ -59,10 +59,18 @@ La mayoría de endpoints están bajo el prefijo `/api` y requieren autenticació
 - `POST /api/proyectos`: crea un proyecto y lo asocia a la empresa autenticada.
 - `GET /api/proyectos/{id}`: obtiene un proyecto por id.
 - `GET /api/proyectos`: lista los proyectos activos de la empresa.
+- `GET /api/proyectos/mis-proyectos`: devuelve solo los proyectos asignados al usuario autenticado usando su cookie/sesion.
 - `GET /api/proyectos/inactivos`: lista los proyectos inactivos.
 - `PATCH /api/proyectos/{id}/reactivar`: reactiva un proyecto inactivo.
 - `PATCH /api/proyectos/{id}`: actualiza parcialmente un proyecto.
 - `DELETE /api/proyectos/{id}`: elimina o desactiva un proyecto.
+
+Valores enum de `estado` en proyectos:
+- `PLANIFICADO`
+- `EN_PROCESO`
+- `PAUSADO`
+- `FINALIZADO`
+- `CANCELADO`
 
 ## APIs de asignación proyecto-empleado
 
@@ -78,6 +86,11 @@ La mayoría de endpoints están bajo el prefijo `/api` y requieren autenticació
 - `PATCH /api/tareas/{id}/reactivar`: reactiva una tarea inactiva.
 - `PATCH /api/tareas/{id}`: actualiza parcialmente una tarea.
 - `DELETE /api/tareas/{id}`: elimina o desactiva una tarea.
+
+Valores enum de `estado` en tareas:
+- `PENDIENTE`
+- `EN_CURSO`
+- `FINALIZADO`
 
 ## APIs de tipos de tarea
 
@@ -128,6 +141,11 @@ La mayoría de endpoints están bajo el prefijo `/api` y requieren autenticació
 - `GET /api/ingresos/proyecto/{proyectoId}`: lista los ingresos asociados a un proyecto.
 - `DELETE /api/ingresos/{id}`: elimina un ingreso.
 
+Valores enum de `tipo` en ingresos:
+- `PAGO_PROYECTO`
+- `SERVICIO_EXTRA`
+- `OTRO`
+
 ## APIs de egresos
 
 - `POST /api/egresos`: registra un egreso para la empresa actual.
@@ -152,4 +170,5 @@ La mayoría de endpoints están bajo el prefijo `/api` y requieren autenticació
 - Los módulos de empleados, clientes, proyectos y tareas manejan recursos activos e inactivos.
 - Algunos endpoints validan roles antes de permitir crear, editar, aprobar o eliminar.
 - En autenticación, el backend diferencia entre `empleado` y `duenio`.
+- En auditoría, los valores válidos de `accion` son `CREAR`, `ACTUALIZAR` y `ELIMINAR`.
 - El backend corre por defecto en el puerto `8080`.
