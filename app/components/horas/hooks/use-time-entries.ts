@@ -30,6 +30,7 @@ import {
   updateTimeEntryFormValue,
 } from "../utils/time-entry-form";
 import { getPendingTaskItems } from "../utils/time-entry-format";
+import { filterTasksForEmployee } from "../utils/time-entry-policy";
 
 const closedModalState: TimeEntryModalState = {
   open: false,
@@ -166,16 +167,12 @@ export function useTimeEntries(session: Session) {
       const nextTasks = projects.flatMap((project, index) => {
         const projectTasks = taskResponses[index] ?? [];
 
-        return projectTasks
-          .filter(
-            (task) =>
-              task.activo &&
-              task.estado !== "FINALIZADO" &&
-              (session.empleadoId
-                ? task.empleadoAsignadoId === session.empleadoId
-                : true),
-          )
-          .map((task) => mapPendingTask(project, task));
+        return filterTasksForEmployee(
+          projectTasks
+            .filter((task) => task.activo && task.estado !== "FINALIZADO")
+            .map((task) => mapPendingTask(project, task)),
+          session.empleadoId,
+        );
       });
 
       setPendingTasks(getPendingTaskItems(nextTasks));
