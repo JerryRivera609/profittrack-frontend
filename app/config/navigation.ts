@@ -5,6 +5,7 @@ import {
   Clock3,
   FolderKanban,
   LayoutDashboard,
+  ListChecks,
   ReceiptText,
   Settings,
   UserRoundCog,
@@ -79,6 +80,13 @@ export const navigationItems: NavigationItem[] = [
     roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
   },
   {
+    description: "Etapas por proyecto, horas, fechas y estado operativo.",
+    href: "/etapas",
+    icon: ListChecks,
+    label: "Etapas",
+    roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
+  },
+  {
     description: "Tablero de tareas, prioridades y responsables.",
     href: "/tareas",
     icon: ClipboardCheck,
@@ -109,10 +117,10 @@ export const navigationItems: NavigationItem[] = [
 ];
 
 export const roleCapabilities: Record<UserRole, string[]> = {
-  ADMIN: ["Empresas", "Usuarios", "Catalogos", "Proyectos"],
-  EMPLEADO: ["Mis proyectos", "Mis tareas"],
-  LIDER: ["Proyectos", "Tareas"],
-  OWNER: ["Mi empresa", "Equipo", "Proyectos", "Planillas"],
+  ADMIN: ["Empresas", "Usuarios", "Catalogos", "Proyectos", "Etapas"],
+  EMPLEADO: ["Mis proyectos", "Mis etapas", "Mis tareas"],
+  LIDER: ["Proyectos", "Etapas", "Tareas"],
+  OWNER: ["Mi empresa", "Equipo", "Proyectos", "Etapas", "Planillas"],
 };
 
 export const portalOptions = [

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { roleCapabilities, roleLabels } from "../../config/navigation";
+import { roleCapabilities } from "../../config/navigation";
 import { API_BASE_URL, ApiRequestError, authApi } from "../../lib/api";
 import {
   createSession,
@@ -66,7 +66,7 @@ export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
       }
 
       const session = createSession({
-        accessToken: response.accessToken,
+        accessToken: response.accessToken ?? response.token,
         backendRole: response.rol,
         companyName: getCompanyName(normalizedRole, response.empresaId),
         displayName: response.nombre?.trim() || email.trim(),

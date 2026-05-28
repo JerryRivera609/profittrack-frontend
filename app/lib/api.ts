@@ -5,6 +5,12 @@ import type {
   Empresa,
   EmpresaPayload,
 } from "../types/domain";
+import {
+  expireStoredSession,
+  getStoredAuthToken,
+  getValidBearerToken,
+  updateStoredSessionFromAuthResponse,
+} from "./auth-session";
 
 export const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
@@ -16,13 +22,25 @@ export type LoginPayload = {
 };
 
 export type LoginResponse = {
+  access_token?: string;
   accessToken?: string;
+  data?: {
+    access_token?: string;
+    accessToken?: string;
+    jwt?: string;
+    token?: string;
+  };
   empleadoId?: number;
   exp?: number;
   expiresAt?: number | string;
   expiresInSeconds?: number;
   id?: number;
+  jwt?: string;
   refreshToken?: string;
+  state?: {
+    token?: string;
+  };
+  token?: string;
   tipo?: string;
   rol?: string;
   usuarioId?: number;
@@ -55,14 +73,20 @@ export async function apiRequest<T>(
   path: string,
   { credentials = "include", method = "GET", body, token }: ApiRequestOptions = {},
 ) {
+  const isAuthRequest = path.startsWith("/api/auth/");
   const headers = new Headers({
     accept: "*/*",
   });
+  const explicitToken = getValidBearerToken(token);
+  const bearerToken = isAuthRequest
+    ? explicitToken
+    : explicitToken ?? getStoredAuthToken();
+
   if (body !== undefined) {
     headers.set("Content-Type", "application/json");
   }
-  if (token?.trim()) {
-    headers.set("Authorization", `Bearer ${token.trim()}`);
+  if (bearerToken) {
+    headers.set("Authorization", `Bearer ${bearerToken}`);
   }
 
   // primera call
@@ -71,32 +95,34 @@ export async function apiRequest<T>(
     cache: "no-store",
     headers,
     method,
-    credentials: "include",
+    credentials,
   });
   // catch de unautthoirzed
-  if (response.status === 401 && path !== "/api/auth/login" && path !== "/api/auth/refresh") {
-    console.log("[apiRequest] Token vencido (401). Intentando refresh silencioso...");
+  if (response.status === 401 && !isAuthRequest) {
     try {
-      if (!refreshPromise) {
-        refreshPromise = authApi.refresh();
+      const retryToken = await refreshSessionToken();
+
+      if (retryToken) {
+        headers.set("Authorization", `Bearer ${retryToken}`);
+      } else {
+        headers.delete("Authorization");
       }
 
-      await refreshPromise;
-      refreshPromise = null;
-      // segunda call con el token actualizado
-      console.log("[apiRequest] Refresh exitoso. Reintentando petición original a:", path);
       response = await fetch(`${API_BASE_URL}${path}`, {
         body: body === undefined ? undefined : JSON.stringify(body),
         cache: "no-store",
         headers,
         method,
-        credentials: "include",
+        credentials,
       });
-    } catch (refreshError) {
+    } catch {
       refreshPromise = null;
-      console.error("[apiRequest] El refresh falló. Redirigiendo a login.", refreshError);
+      expireStoredSession();
+      throw new ApiRequestError(401, "Sesion expirada");
+    }
 
-      throw new ApiRequestError(401, "Sesión expirada");
+    if (response.status === 401) {
+      throw new ApiRequestError(401, "No autorizado para esta operacion.");
     }
   }
   const responseText = await response.text();
@@ -146,6 +172,10 @@ export const authApi = {
     apiRequest<LoginResponse | undefined>("/api/auth/refresh", {
       method: "POST",
     }),
+  logout: () =>
+    apiRequest<void>("/api/auth/logout", {
+      method: "POST",
+    }),
 };
 
 export const dueniosApi = {
@@ -170,3 +200,18 @@ export const dueniosApi = {
       token,
     }),
 };
+
+async function refreshSessionToken() {
+  try {
+    if (!refreshPromise) {
+      refreshPromise = authApi.refresh();
+    }
+
+    const refreshResponse = await refreshPromise;
+
+    return updateStoredSessionFromAuthResponse(refreshResponse) ??
+      getStoredAuthToken();
+  } finally {
+    refreshPromise = null;
+  }
+}
