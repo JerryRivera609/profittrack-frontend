@@ -16,6 +16,7 @@ import { TaskList } from "./task-list";
 
 export function TaskManagement() {
   const { session } = usePlatformAuth();
+  const canManageTasks = session.role !== "EMPLEADO";
   const {
     closeDeleteModal,
     closeFormModal,
@@ -54,13 +55,15 @@ export function TaskManagement() {
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={!selectedProjectId}
-              icon={<Plus className="size-4" />}
-              onClick={openCreateModal}
-            >
-              Nueva tarea
-            </Button>
+            {canManageTasks ? (
+              <Button
+                disabled={!selectedProjectId}
+                icon={<Plus className="size-4" />}
+                onClick={openCreateModal}
+              >
+                Nueva tarea
+              </Button>
+            ) : null}
             <Button
               disabled={isLoading || !selectedProjectId}
               icon={<RefreshCw className={isLoading ? "size-4 animate-spin" : "size-4"} />}
@@ -71,7 +74,11 @@ export function TaskManagement() {
             </Button>
           </div>
         }
-        description="Backlog, responsables, estados, estimaciones y seguimiento por proyecto."
+        description={
+          canManageTasks
+            ? "Backlog, responsables, estados, estimaciones y seguimiento por proyecto."
+            : "Consulta las tareas asignadas a tus proyectos y registra el avance desde Horas HH."
+        }
         eyebrow="Productividad"
         stats={stats}
         title="Tareas"
@@ -97,6 +104,7 @@ export function TaskManagement() {
           <StatusMessage message={error} tone="error" />
 
           <TaskList
+            canManageTasks={canManageTasks}
             isLoading={isLoading}
             onDelete={openDeleteModal}
             onEdit={openEditModal}
@@ -106,58 +114,64 @@ export function TaskManagement() {
         </div>
       </ModulePage>
 
-      <TaskFormModal
-        employeeOptions={employeeOptions}
-        form={form}
-        isLoadingCatalogs={isLoadingCatalogs}
-        isSaving={isSaving}
-        modalState={modalState}
-        onChange={(key, value) =>
-          setForm((current) => updateTaskFormValue(current, key, value))
-        }
-        onClose={closeFormModal}
-        onSubmit={submitTask}
-        projectOptions={projectOptions}
-        taskTypeOptions={taskTypeOptions}
-      />
+      {canManageTasks ? (
+        <TaskFormModal
+          employeeOptions={employeeOptions}
+          form={form}
+          isLoadingCatalogs={isLoadingCatalogs}
+          isSaving={isSaving}
+          modalState={modalState}
+          onChange={(key, value) =>
+            setForm((current) => updateTaskFormValue(current, key, value))
+          }
+          onClose={closeFormModal}
+          onSubmit={submitTask}
+          projectOptions={projectOptions}
+          taskTypeOptions={taskTypeOptions}
+        />
+      ) : null}
 
-      <ConfirmModal
-        confirmLabel="Eliminar tarea"
-        description={
-          deleteTarget
-            ? `Se eliminara ${deleteTarget.nombre} del backlog del proyecto.`
-            : ""
-        }
-        isLoading={isDeleting}
-        onClose={closeDeleteModal}
-        onConfirm={() => void confirmDelete()}
-        open={Boolean(deleteTarget)}
-        title={deleteTarget ? `Eliminar ${deleteTarget.nombre}` : "Eliminar tarea"}
-      />
+      {canManageTasks ? (
+        <ConfirmModal
+          confirmLabel="Eliminar tarea"
+          description={
+            deleteTarget
+              ? `Se eliminara ${deleteTarget.nombre} del backlog del proyecto.`
+              : ""
+          }
+          isLoading={isDeleting}
+          onClose={closeDeleteModal}
+          onConfirm={() => void confirmDelete()}
+          open={Boolean(deleteTarget)}
+          title={deleteTarget ? `Eliminar ${deleteTarget.nombre}` : "Eliminar tarea"}
+        />
+      ) : null}
 
-      <ConfirmModal
-        confirmLabel={
-          lifecycleTarget?.action === "start" ? "Iniciar tarea" : "Finalizar tarea"
-        }
-        description={
-          lifecycleTarget
-            ? lifecycleTarget.action === "start"
-              ? `Se registrara el inicio real de ${lifecycleTarget.task.nombre} con la fecha de hoy.`
-              : `Se registrara el cierre real de ${lifecycleTarget.task.nombre} con la fecha de hoy.`
-            : ""
-        }
-        isLoading={isSaving}
-        onClose={closeLifecycleModal}
-        onConfirm={() => void confirmLifecycleAction()}
-        open={Boolean(lifecycleTarget)}
-        title={
-          lifecycleTarget
-            ? lifecycleTarget.action === "start"
-              ? `Iniciar ${lifecycleTarget.task.nombre}`
-              : `Finalizar ${lifecycleTarget.task.nombre}`
-            : "Confirmar accion"
-        }
-      />
+      {canManageTasks ? (
+        <ConfirmModal
+          confirmLabel={
+            lifecycleTarget?.action === "start" ? "Iniciar tarea" : "Finalizar tarea"
+          }
+          description={
+            lifecycleTarget
+              ? lifecycleTarget.action === "start"
+                ? `Se registrara el inicio real de ${lifecycleTarget.task.nombre} con la fecha de hoy.`
+                : `Se registrara el cierre real de ${lifecycleTarget.task.nombre} con la fecha de hoy.`
+              : ""
+          }
+          isLoading={isSaving}
+          onClose={closeLifecycleModal}
+          onConfirm={() => void confirmLifecycleAction()}
+          open={Boolean(lifecycleTarget)}
+          title={
+            lifecycleTarget
+              ? lifecycleTarget.action === "start"
+                ? `Iniciar ${lifecycleTarget.task.nombre}`
+                : `Finalizar ${lifecycleTarget.task.nombre}`
+              : "Confirmar accion"
+          }
+        />
+      ) : null}
     </>
   );
 }

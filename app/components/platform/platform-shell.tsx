@@ -10,21 +10,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
   navigationItems,
   roleLabels,
   roleLoginPath,
 } from "../../config/navigation";
-import {
-  authApi,
-  ApiRequestError,
-} from "../../lib/api";
+import { authApi } from "../../lib/api";
 import {
   buildRefreshedSession,
   clearStoredSession,
   getRoleLoginPath,
   getStoredSession,
+  SESSION_EXPIRED_EVENT,
   updateStoredSession,
 } from "../../lib/auth-session";
 import { cn } from "../../lib/class-names";
@@ -54,9 +52,26 @@ export function PlatformShell({ children }: PlatformShellProps) {
   const canAccess =
     !currentItem || (session ? currentItem.roles.includes(session.role) : false);
 
+  const forceLogout = useCallback(
+    (activeSession?: Session | null) => {
+      const loginPath = activeSession
+        ? getRoleLoginPath(activeSession.role)
+        : "/login";
+
+      clearStoredSession();
+      setSession(null);
+      router.replace(loginPath);
+    },
+    [router],
+  );
+
   useEffect(() => {
-    setSession(getStoredSession());
-    setHasHydrated(true);
+    const timeoutId = window.setTimeout(() => {
+      setSession(getStoredSession());
+      setHasHydrated(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -70,14 +85,28 @@ export function PlatformShell({ children }: PlatformShellProps) {
   }, [hasHydrated, router, session]);
 
   useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
+    function handleSessionExpired() {
+      forceLogout(session);
+    }
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    };
+  }, [forceLogout, hasHydrated, session]);
+
+  useEffect(() => {
     if (!hasHydrated || !session) {
       return;
     }
 
     const activeSession = session;
     let cancelled = false;
-    let refreshTimeoutId: number | undefined;
-    let logoutTimeoutId: number | undefined;
 
     async function runRefresh() {
       try {
@@ -90,12 +119,11 @@ export function PlatformShell({ children }: PlatformShellProps) {
         const refreshedSession = buildRefreshedSession(activeSession, response);
         updateStoredSession(refreshedSession);
         setSession(refreshedSession);
-      } catch (error) {
+      } catch {
         if (cancelled) {
           return;
         }
 
-        console.error("[sessionRefresh]", error);
         forceLogout(activeSession);
       }
     }
@@ -103,11 +131,11 @@ export function PlatformShell({ children }: PlatformShellProps) {
     const refreshDelay = Math.max(activeSession.expiresAt - Date.now() - 10000, 0);
     const logoutDelay = Math.max(activeSession.expiresAt - Date.now(), 0);
 
-    refreshTimeoutId = window.setTimeout(() => {
+    const refreshTimeoutId = window.setTimeout(() => {
       void runRefresh();
     }, refreshDelay);
 
-    logoutTimeoutId = window.setTimeout(() => {
+    const logoutTimeoutId = window.setTimeout(() => {
       forceLogout(activeSession);
     }, logoutDelay);
 
@@ -122,21 +150,12 @@ export function PlatformShell({ children }: PlatformShellProps) {
         window.clearTimeout(logoutTimeoutId);
       }
     };
-  }, [hasHydrated, router, session]);
+  }, [forceLogout, hasHydrated, session]);
 
   function handleLogout() {
-    if (!session) {
-      return;
-    }
-
-    forceLogout(session);
-  }
-
-  function forceLogout(activeSession: Session) {
-    const loginPath = getRoleLoginPath(activeSession.role);
-    clearStoredSession();
-    setSession(null);
-    router.replace(loginPath);
+    void authApi.logout().catch(() => undefined).finally(() => {
+      forceLogout(session);
+    });
   }
 
   if (!hasHydrated || !session) {
