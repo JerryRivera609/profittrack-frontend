@@ -15,7 +15,7 @@ export const clientService = {
     }),
   list: (token?: string) =>
     apiRequest<Client[]>("/api/clientes", {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   remove: (id: number, token?: string) =>
