@@ -78,6 +78,14 @@ export function useProjects(session: Session) {
   const loadCatalogs = useCallback(async () => {
     setIsLoadingCatalogs(true);
 
+    if (session.role === "EMPLEADO") {
+      setClientOptions([]);
+      setLeaderOptions([]);
+      setServiceTypeOptions([]);
+      setIsLoadingCatalogs(false);
+      return;
+    }
+
     try {
       const [clientsResponse, employeesResponse, serviceTypesResponse] =
         await Promise.all([
@@ -124,7 +132,7 @@ export function useProjects(session: Session) {
     } finally {
       setIsLoadingCatalogs(false);
     }
-  }, [scope, session.apiToken]);
+  }, [scope, session.apiToken, session.role]);
 
   const loadProjects = useCallback(async () => {
     setError("");
@@ -141,7 +149,7 @@ export function useProjects(session: Session) {
     } finally {
       setIsLoading(false);
     }
-  }, [session.apiToken]);
+  }, [session.apiToken, session.role]);
 
   const loadProjectAssignments = useCallback(
     async (projectId: number) => {
@@ -475,7 +483,27 @@ function buildScopedOptions(
 }
 
 function getErrorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "No se pudo completar la operacion.";
+  if (!(error instanceof Error)) {
+    return "No se pudo completar la operacion.";
+  }
+
+  return extractBackendMessage(error.message);
+}
+
+function extractBackendMessage(message: string) {
+  const separatorIndex = message.indexOf(": ");
+  const responseBody =
+    separatorIndex >= 0 ? message.slice(separatorIndex + 2) : "";
+
+  if (!responseBody) {
+    return message;
+  }
+
+  try {
+    const parsedBody = JSON.parse(responseBody) as { error?: string; message?: string };
+
+    return parsedBody.error ?? parsedBody.message ?? message;
+  } catch {
+    return responseBody || message;
+  }
 }

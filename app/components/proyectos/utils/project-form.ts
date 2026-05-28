@@ -14,6 +14,7 @@ const emptyForm: ProjectFormValues = {
   codigo: "",
   descripcion: "",
   empresaId: "",
+  etapas: [],
   estado: "",
   fechaFinPlanificada: "",
   fechaInicioPlanificada: "",
@@ -39,9 +40,18 @@ export function createProjectFormValues(
   session: Session,
 ): ProjectFormValues {
   if (!project) {
+    const defaultStartDate = new Date();
+
     return {
       ...emptyForm,
+      codigo: createDefaultProjectCode(defaultStartDate),
       empresaId: session.empresaId?.toString() ?? "",
+      fechaFinPlanificada: formatDateInput(addDays(defaultStartDate, 30)),
+      fechaInicioPlanificada: formatDateInput(defaultStartDate),
+      horasPlanificadas: "0",
+      margenPlanificado: "0",
+      presupuestoPlanificado: "0",
+      precioVenta: "0",
     };
   }
 
@@ -50,6 +60,7 @@ export function createProjectFormValues(
     codigo: project.codigo,
     descripcion: project.descripcion,
     empresaId: project.empresaId.toString(),
+    etapas: [],
     estado: project.estado ?? "",
     fechaFinPlanificada: normalizeDateInput(project.fechaFinPlanificada),
     fechaInicioPlanificada: normalizeDateInput(project.fechaInicioPlanificada),
@@ -63,10 +74,10 @@ export function createProjectFormValues(
   };
 }
 
-export function updateProjectFormValue(
+export function updateProjectFormValue<Key extends keyof ProjectFormValues>(
   form: ProjectFormValues,
-  key: keyof ProjectFormValues,
-  value: string,
+  key: Key,
+  value: ProjectFormValues[Key],
 ) {
   return {
     ...form,
@@ -81,16 +92,19 @@ export function buildCreateProjectPayload(
   return {
     clienteId: Number.parseInt(form.clienteId, 10),
     codigo: form.codigo.trim(),
-    descripcion: form.descripcion.trim(),
+    descripcion: normalizeProjectDescription(form),
     empresaId: Number.parseInt(resolveEmpresaId(form, scope), 10),
+    etapas: form.etapas.map((stage, index) =>
+      buildCreateProjectStagePayload(stage, index, form),
+    ),
     fechaFinPlanificada: form.fechaFinPlanificada,
     fechaInicioPlanificada: form.fechaInicioPlanificada,
-    horasPlanificadas: Number.parseFloat(form.horasPlanificadas),
+    horasPlanificadas: parseDecimalInput(form.horasPlanificadas),
     liderEmpleadoId: Number.parseInt(form.liderEmpleadoId, 10),
-    margenPlanificado: Number.parseFloat(form.margenPlanificado),
+    margenPlanificado: parseDecimalInput(form.margenPlanificado),
     nombre: form.nombre.trim(),
-    presupuestoPlanificado: Number.parseFloat(form.presupuestoPlanificado),
-    precioVenta: Number.parseFloat(form.precioVenta),
+    presupuestoPlanificado: parseDecimalInput(form.presupuestoPlanificado),
+    precioVenta: parseDecimalInput(form.precioVenta),
     tipoServicioId: Number.parseInt(form.tipoServicioId, 10),
   };
 }
@@ -101,16 +115,16 @@ export function buildUpdateProjectPayload(
   return {
     clienteId: Number.parseInt(form.clienteId, 10),
     codigo: form.codigo.trim(),
-    descripcion: form.descripcion.trim(),
+    descripcion: normalizeProjectDescription(form),
     estado: normalizeProjectStatus(form.estado),
     fechaFinPlanificada: form.fechaFinPlanificada,
     fechaInicioPlanificada: form.fechaInicioPlanificada,
-    horasPlanificadas: Number.parseFloat(form.horasPlanificadas),
+    horasPlanificadas: parseDecimalInput(form.horasPlanificadas),
     liderEmpleadoId: Number.parseInt(form.liderEmpleadoId, 10),
-    margenPlanificado: Number.parseFloat(form.margenPlanificado),
+    margenPlanificado: parseDecimalInput(form.margenPlanificado),
     nombre: form.nombre.trim(),
-    presupuestoPlanificado: Number.parseFloat(form.presupuestoPlanificado),
-    precioVenta: Number.parseFloat(form.precioVenta),
+    presupuestoPlanificado: parseDecimalInput(form.presupuestoPlanificado),
+    precioVenta: parseDecimalInput(form.precioVenta),
     tipoServicioId: Number.parseInt(form.tipoServicioId, 10),
   };
 }
@@ -148,6 +162,72 @@ export function buildProjectLifecyclePayload(
 
 function normalizeDateInput(value?: string | null) {
   return value?.slice(0, 10) ?? "";
+}
+
+function buildCreateProjectStagePayload(
+  stage: ProjectFormValues["etapas"][number],
+  index: number,
+  form: ProjectFormValues,
+) {
+  const stageName = stage.nombre.trim() || `Etapa ${index + 1}`;
+
+  return {
+    proyectoId: 0,
+    nombre: stageName,
+    descripcion:
+      stage.descripcion.trim() ||
+      `${stageName} de ${form.nombre.trim() || form.codigo.trim() || "proyecto"}`,
+    orden: index + 1,
+    horasPlanificadas: parseDecimalInput(stage.horasPlanificadas),
+    fechaInicioPlanificada:
+      stage.fechaInicioPlanificada || form.fechaInicioPlanificada,
+    fechaFinPlanificada: stage.fechaFinPlanificada || form.fechaFinPlanificada,
+  };
+}
+
+function normalizeProjectDescription(form: ProjectFormValues) {
+  return (
+    form.descripcion.trim() ||
+    form.nombre.trim() ||
+    form.codigo.trim() ||
+    "Proyecto sin descripcion"
+  );
+}
+
+function parseDecimalInput(value: string) {
+  const parsedValue = Number.parseFloat(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+}
+
+function createDefaultProjectCode(date: Date) {
+  const stamp = [
+    date.getFullYear(),
+    `${date.getMonth() + 1}`.padStart(2, "0"),
+    `${date.getDate()}`.padStart(2, "0"),
+  ].join("");
+  const time = [
+    `${date.getHours()}`.padStart(2, "0"),
+    `${date.getMinutes()}`.padStart(2, "0"),
+    `${date.getSeconds()}`.padStart(2, "0"),
+  ].join("");
+
+  return `PR-${stamp}-${time}`;
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+
+  return nextDate;
+}
+
+function formatDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function normalizeProjectStatus(value: string) {

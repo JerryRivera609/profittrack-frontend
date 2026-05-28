@@ -7,6 +7,7 @@ import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
 import { StatusMessage } from "../../ui/status-message";
+import { ToastMessage } from "../../ui/toast-message";
 import { useProjects } from "../hooks/use-projects";
 import { getProjectStats } from "../utils/project-format";
 import { updateProjectFormValue } from "../utils/project-form";
@@ -71,6 +72,11 @@ export function ProjectManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">
@@ -126,6 +132,7 @@ export function ProjectManagement() {
       {canManageProjects ? (
         <ProjectFormModal
           clientOptions={clientOptions}
+          error={error}
           form={form}
           isLoadingCatalogs={isLoadingCatalogs}
           isSaving={isSaving}
