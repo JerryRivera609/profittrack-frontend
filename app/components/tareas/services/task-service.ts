@@ -11,7 +11,7 @@ export const taskService = {
     }),
   listByProject: (projectId: number, token?: string) =>
     apiRequest<Task[]>(`/api/tareas/proyecto/${projectId}`, {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   remove: (id: number, token?: string) =>

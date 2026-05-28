@@ -8,6 +8,7 @@ import { EmptyState } from "../../ui/empty-state";
 import { Panel } from "../../ui/panel";
 
 type TaskListProps = {
+  canManageTasks: boolean;
   isLoading: boolean;
   onDelete: (task: Task) => void;
   onEdit: (task: Task) => void;
@@ -16,6 +17,7 @@ type TaskListProps = {
 };
 
 export function TaskList({
+  canManageTasks,
   isLoading,
   onDelete,
   onEdit,
@@ -40,7 +42,11 @@ export function TaskList({
           />
         ) : tasks.length === 0 ? (
           <EmptyState
-            description="Cuando registres la primera tarea para el proyecto seleccionado, aparecera aqui."
+            description={
+              canManageTasks
+                ? "Cuando registres la primera tarea para el proyecto seleccionado, aparecera aqui."
+                : "Cuando tengas tareas asignadas para el proyecto seleccionado, apareceran aqui."
+            }
             icon={<ClipboardCheck className="size-6" />}
             title="No hay tareas registradas"
           />
@@ -53,7 +59,9 @@ export function TaskList({
                   <th className="py-3 pr-4 font-medium">Asignacion</th>
                   <th className="py-3 pr-4 font-medium">Fechas</th>
                   <th className="py-3 pr-4 font-medium">Estado</th>
-                  <th className="py-3 text-right font-medium">Acciones</th>
+                  <th className="py-3 text-right font-medium">
+                    {canManageTasks ? "Acciones" : "Vista"}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -81,40 +89,46 @@ export function TaskList({
                       </p>
                     </td>
                     <td className="py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        {!task.fechaInicioReal ? (
+                      {canManageTasks ? (
+                        <div className="flex justify-end gap-2">
+                          {!task.fechaInicioReal ? (
+                            <Button
+                              icon={<Play className="size-4" />}
+                              onClick={() => onLifecycleAction(task, "start")}
+                              variant="primary"
+                            >
+                              Iniciar
+                            </Button>
+                          ) : null}
+                          {task.fechaInicioReal && !task.fechaFinReal ? (
+                            <Button
+                              icon={<Flag className="size-4" />}
+                              onClick={() => onLifecycleAction(task, "finish")}
+                              variant="secondary"
+                            >
+                              Finalizar
+                            </Button>
+                          ) : null}
                           <Button
-                            icon={<Play className="size-4" />}
-                            onClick={() => onLifecycleAction(task, "start")}
-                            variant="primary"
-                          >
-                            Iniciar
-                          </Button>
-                        ) : null}
-                        {task.fechaInicioReal && !task.fechaFinReal ? (
-                          <Button
-                            icon={<Flag className="size-4" />}
-                            onClick={() => onLifecycleAction(task, "finish")}
+                            icon={<Pencil className="size-4" />}
+                            onClick={() => onEdit(task)}
                             variant="secondary"
                           >
-                            Finalizar
+                            Editar
                           </Button>
-                        ) : null}
-                        <Button
-                          icon={<Pencil className="size-4" />}
-                          onClick={() => onEdit(task)}
-                          variant="secondary"
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          icon={<Trash2 className="size-4" />}
-                          onClick={() => onDelete(task)}
-                          variant="danger"
-                        >
-                          Eliminar
-                        </Button>
-                      </div>
+                          <Button
+                            icon={<Trash2 className="size-4" />}
+                            onClick={() => onDelete(task)}
+                            variant="danger"
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          Registra horas desde Horas HH.
+                        </p>
+                      )}
                     </td>
                   </tr>
                 ))}

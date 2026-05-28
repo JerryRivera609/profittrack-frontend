@@ -55,6 +55,21 @@ export function useTasks(session: Session) {
     setIsLoadingCatalogs(true);
 
     try {
+      if (session.role === "EMPLEADO") {
+        const projectsResponse = await projectService.listMine(session.apiToken);
+        const nextProjectOptions = (projectsResponse ?? []).map((project) => ({
+          description: `${project.clienteNombre} Â· ${project.codigo}`,
+          label: project.nombre,
+          value: project.id.toString(),
+        }));
+
+        setProjectOptions(nextProjectOptions);
+        setEmployeeOptions([]);
+        setTaskTypeOptions([]);
+        setSelectedProjectId((current) => current || nextProjectOptions[0]?.value || "");
+        return;
+      }
+
       const [projectsResponse, employeesResponse, taskTypesResponse] = await Promise.all([
         projectService.list(session.apiToken),
         employeeService.list(session.apiToken),
@@ -107,7 +122,7 @@ export function useTasks(session: Session) {
     } finally {
       setIsLoadingCatalogs(false);
     }
-  }, [scope, session.apiToken]);
+  }, [scope, session.apiToken, session.role]);
 
   const loadTasks = useCallback(async () => {
     if (!selectedProjectId) {
@@ -124,13 +139,18 @@ export function useTasks(session: Session) {
         Number.parseInt(selectedProjectId, 10),
         session.apiToken,
       );
-      setTasks(response ?? []);
+      const nextTasks =
+        session.role === "EMPLEADO" && typeof session.empleadoId === "number"
+          ? (response ?? []).filter((task) => task.empleadoAsignadoId === session.empleadoId)
+          : response ?? [];
+
+      setTasks(nextTasks);
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProjectId, session.apiToken]);
+  }, [selectedProjectId, session.apiToken, session.empleadoId, session.role]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
