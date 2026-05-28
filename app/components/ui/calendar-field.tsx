@@ -71,7 +71,7 @@ export function CalendarField({
         <button
           aria-expanded={open}
           className={cn(
-            "mt-1.5 flex min-h-12 w-full items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition",
+            "mt-1.5 flex min-h-10 w-full items-center gap-3 rounded-xl border bg-white px-2 py-1 text-left shadow-sm transition",
             disabled
               ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
               : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus-visible:border-teal-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-100",

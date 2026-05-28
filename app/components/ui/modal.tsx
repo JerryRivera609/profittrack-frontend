@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { cn } from "../../lib/class-names";
 
-type ModalSize = "md" | "lg" | "xl";
+type ModalSize = "md" | "lg" | "xl" | "2xl";
 
 type ModalProps = {
   children: ReactNode;
@@ -20,6 +20,7 @@ type ModalSectionProps = {
 };
 
 const sizeClasses: Record<ModalSize, string> = {
+  "2xl": "max-w-7xl",
   lg: "max-w-3xl",
   md: "max-w-xl",
   xl: "max-w-5xl",
@@ -58,7 +59,7 @@ export function Modal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <button
         aria-label="Cerrar modal"
         className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
