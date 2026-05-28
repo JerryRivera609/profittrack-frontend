@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
+import { roleService } from "../../roles/services/role-service";
+import type { Role } from "../../roles/types/role";
 import { employeeService } from "../services/employee-service";
 import { validateEmployeeForm } from "../schema/employee-schema";
 import type { Employee, EmployeeFormValues, EmployeeModalState } from "../types/employee";
@@ -27,8 +29,10 @@ export function useEmployees(session: Session) {
   const [form, setForm] = useState<EmployeeFormValues>(() =>
     createEmployeeFormValues(null, session),
   );
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [modalState, setModalState] = useState<EmployeeModalState>(closedModalState);
   const [notice, setNotice] = useState("");
@@ -37,6 +41,17 @@ export function useEmployees(session: Session) {
     () => getVisibleEmployees(employees, scope),
     [employees, scope],
   );
+  const visibleRoles = useMemo(() => {
+    const empresaId = scope.isAdmin
+      ? Number.parseInt(form.empresaId, 10)
+      : scope.sessionEmpresaId;
+    const scopedRoles =
+      empresaId && !Number.isNaN(empresaId)
+        ? roles.filter((role) => role.empresaId === empresaId)
+        : roles;
+
+    return [...scopedRoles].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [form.empresaId, roles, scope]);
 
   const loadEmployees = useCallback(async () => {
     setError("");
@@ -52,13 +67,28 @@ export function useEmployees(session: Session) {
     }
   }, [session.apiToken]);
 
+  const loadRoles = useCallback(async () => {
+    setError("");
+    setIsLoadingRoles(true);
+
+    try {
+      const response = await roleService.list(session.apiToken);
+      setRoles(response ?? []);
+    } catch (loadError) {
+      setError(getErrorMessage(loadError));
+    } finally {
+      setIsLoadingRoles(false);
+    }
+  }, [session.apiToken]);
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void loadEmployees();
+      void loadRoles();
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [loadEmployees]);
+  }, [loadEmployees, loadRoles]);
 
   function openCreateModal() {
     setError("");
@@ -174,13 +204,16 @@ export function useEmployees(session: Session) {
     form,
     isDeleting,
     isLoading,
+    isLoadingRoles,
     isSaving,
     loadEmployees,
+    loadRoles,
     modalState,
     notice,
     openCreateModal,
     openDeleteModal,
     openEditModal,
+    roles: visibleRoles,
     scope,
     setForm,
     submitEmployee,
