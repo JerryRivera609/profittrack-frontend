@@ -119,7 +119,12 @@ export function useTimeEntries(session: Session) {
           session.apiToken,
         );
 
-        const nextOptions = (response ?? []).map((task) => ({
+        const visibleTasks =
+          session.role === "EMPLEADO"
+            ? filterTasksForEmployee(response ?? [], session.empleadoId)
+            : response ?? [];
+
+        const nextOptions = visibleTasks.map((task) => ({
           description: `${task.tipoTareaNombre} · ${task.empleadoNombre}`,
           label: task.nombre,
           value: task.id.toString(),
@@ -141,7 +146,7 @@ export function useTimeEntries(session: Session) {
         setIsLoadingTasks(false);
       }
     },
-    [session.apiToken],
+    [session.apiToken, session.empleadoId, session.role],
   );
 
   const loadPendingTasks = useCallback(async () => {
@@ -181,7 +186,7 @@ export function useTimeEntries(session: Session) {
     } finally {
       setIsLoadingPendingTasks(false);
     }
-  }, [projects, scope.isDeveloper, session.apiToken]);
+  }, [projects, scope.isDeveloper, session.apiToken, session.empleadoId]);
 
   const loadEntries = useCallback(async () => {
     setError("");
