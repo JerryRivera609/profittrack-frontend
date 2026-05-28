@@ -1,13 +1,14 @@
 "use client";
 
-import { ClipboardCheck, Settings } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { cn } from "../../../lib/class-names";
+import { RoleManagement } from "../../roles/components/role-management";
 import { ServiceTypeManagement } from "../../tipos-servicio/components/service-type-management";
 import { TaskTypeManagement } from "../../tipos-tarea/components/task-type-management";
 
-type ConfigurationSection = "service-types" | "task-types";
+type ConfigurationSection = "service-types" | "task-types" | "roles";
 
 type ConfigurationTab = {
   icon: ReactNode;
@@ -26,6 +27,11 @@ const tabs: ConfigurationTab[] = [
     id: "task-types",
     label: "Tipos de tarea",
   },
+  {
+    icon: <BadgeCheck className="size-4" />,
+    id: "roles",
+    label: "Roles de empleados",
+  },
 ];
 
 export function ConfigurationManagement() {
@@ -34,7 +40,7 @@ export function ConfigurationManagement() {
 
   return (
     <div className="space-y-5">
-      <div className="grid rounded-lg bg-slate-100 p-1 sm:grid-cols-2">
+      <div className="grid rounded-lg bg-slate-100 p-1 sm:grid-cols-3">
         {tabs.map((tab) => {
           const isActive = tab.id === activeSection;
 
@@ -58,11 +64,9 @@ export function ConfigurationManagement() {
         })}
       </div>
 
-      {activeSection === "service-types" ? (
-        <ServiceTypeManagement />
-      ) : (
-        <TaskTypeManagement />
-      )}
+      {activeSection === "service-types" ? <ServiceTypeManagement /> : null}
+      {activeSection === "task-types" ? <TaskTypeManagement /> : null}
+      {activeSection === "roles" ? <RoleManagement /> : null}
     </div>
   );
 }

@@ -15,7 +15,7 @@ export const taskTypeService = {
     }),
   list: (token?: string) =>
     apiRequest<TaskType[]>("/api/tipos-tarea", {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   remove: (id: number, token?: string) =>
