@@ -22,6 +22,7 @@ export function TimeEntryManagement() {
   const { session } = usePlatformAuth();
   const [infoOpen, setInfoOpen] = useState(false);
   const {
+    canApproveAnyProject,
     closeDecisionModal,
     closeDeleteModal,
     closeFormModal,
@@ -64,6 +65,7 @@ export function TimeEntryManagement() {
     updateWorkSessionDescription,
     workSession,
   } = useTimeEntries(session);
+  const showApprovalPanel = scope.canApprove || canApproveAnyProject;
 
   return (
     <>
@@ -90,9 +92,9 @@ export function TimeEntryManagement() {
           </div>
         }
         description={
-          scope.isDeveloper
-            ? "Toma tiempo desde tus tareas pendientes, controla tu sesión en vivo y registra horas por tarea con una experiencia más operativa."
-            : "Supervisa registros por proyecto, revisa el historial del equipo y aprueba las horas desde una vista compacta."
+          showApprovalPanel
+            ? "Supervisa registros por proyecto, revisa el historial del equipo y aprueba las horas desde una vista compacta."
+            : "Toma tiempo desde tus tareas pendientes, controla tu sesión en vivo y registra horas por tarea con una experiencia más operativa."
         }
         eyebrow="Horas HH"
         title="Control de horas hombre"
@@ -116,7 +118,16 @@ export function TimeEntryManagement() {
             ) : null}
           </div>
 
-          {scope.isDeveloper ? (
+          {scope.isDeveloper && showApprovalPanel ? (
+            <PendingTaskBoard
+              isLoading={isLoadingPendingTasks}
+              onManualEntry={openManualEntryForTask}
+              onStartTask={openWorkSessionForTask}
+              tasks={pendingTasks}
+            />
+          ) : null}
+
+          {scope.isDeveloper && !showApprovalPanel ? (
             <div className="space-y-5">
               <PendingTaskBoard
                 isLoading={isLoadingPendingTasks}

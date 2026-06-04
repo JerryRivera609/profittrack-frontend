@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
 import type { Project } from "../../proyectos/types/project";
 import { projectService } from "../../proyectos/services/project-service";
+import { canApproveProjectHours } from "../../proyectos/utils/project-permissions";
 import type { Task } from "../../tareas/types/task";
 import { taskService } from "../../tareas/services/task-service";
 import { validateTimeEntryForm } from "../schema/time-entry-schema";
@@ -37,7 +38,7 @@ const closedModalState: TimeEntryModalState = {
 };
 
 export function useTimeEntries(session: Session) {
-  const scope = useMemo(() => createTimeEntryScope(session), [session]);
+  const baseScope = useMemo(() => createTimeEntryScope(session), [session]);
   const [deleteTarget, setDeleteTarget] = useState<TimeEntry | null>(null);
   const [decisionTarget, setDecisionTarget] = useState<{
     action: "approve" | "reject";
@@ -69,17 +70,35 @@ export function useTimeEntries(session: Session) {
   const [taskOptions, setTaskOptions] = useState<TimeEntryCatalogOption[]>([]);
   const [workSession, setWorkSession] = useState<WorkSessionState | null>(null);
 
+  const selectedFilterProject = useMemo(
+    () =>
+      projects.find((project) => project.id.toString() === filters.proyectoId) ??
+      null,
+    [filters.proyectoId, projects],
+  );
+  const scope = useMemo(
+    () => ({
+      ...baseScope,
+      canApprove: canApproveProjectHours(session, selectedFilterProject),
+    }),
+    [baseScope, selectedFilterProject, session],
+  );
+  const canApproveAnyProject = useMemo(
+    () => projects.some((project) => canApproveProjectHours(session, project)),
+    [projects, session],
+  );
+
   const loadProjectOptions = useCallback(async () => {
     try {
       const response =
-        session.role === "EMPLEADO"
+        session.role === "EMPLEADO" || session.role === "LIDER"
           ? await projectService.listMine(session.apiToken)
           : await projectService.list(session.apiToken);
 
       const visibleProjects = (response ?? []).filter((project) =>
-        scope.isAdmin || !scope.sessionEmpresaId
+        baseScope.isAdmin || !baseScope.sessionEmpresaId
           ? true
-          : project.empresaId === scope.sessionEmpresaId,
+          : project.empresaId === baseScope.sessionEmpresaId,
       );
 
       const nextOptions = visibleProjects.map((project) => ({
@@ -87,21 +106,27 @@ export function useTimeEntries(session: Session) {
         label: project.nombre,
         value: project.id.toString(),
       }));
+      const defaultProjectId =
+        visibleProjects
+          .find((project) => canApproveProjectHours(session, project))
+          ?.id.toString() ??
+        nextOptions[0]?.value ??
+        "";
 
       setProjects(visibleProjects);
       setProjectOptions(nextOptions);
       setFilters((current) => ({
         ...current,
-        proyectoId: current.proyectoId || nextOptions[0]?.value || "",
+        proyectoId: current.proyectoId || defaultProjectId,
       }));
       setForm((current) => ({
         ...current,
-        proyectoId: current.proyectoId || nextOptions[0]?.value || "",
+        proyectoId: current.proyectoId || defaultProjectId,
       }));
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     }
-  }, [scope, session.apiToken, session.role]);
+  }, [baseScope, session]);
 
   const loadTasksForProject = useCallback(
     async (projectId: string) => {
@@ -200,7 +225,9 @@ export function useTimeEntries(session: Session) {
               session.apiToken,
             )
           : []
-        : await timeEntryService.listMine(session.apiToken);
+        : canApproveAnyProject
+          ? []
+          : await timeEntryService.listMine(session.apiToken);
 
       const filteredEntries = (response ?? []).filter((entry) => {
         if (filters.fechaInicio && entry.fechaTrabajo < filters.fechaInicio) {
@@ -220,7 +247,14 @@ export function useTimeEntries(session: Session) {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.fechaFin, filters.fechaInicio, filters.proyectoId, scope.canApprove, session.apiToken]);
+  }, [
+    canApproveAnyProject,
+    filters.fechaFin,
+    filters.fechaInicio,
+    filters.proyectoId,
+    scope.canApprove,
+    session.apiToken,
+  ]);
 
   const loadSummary = useCallback(async () => {
     setIsLoadingSummary(true);
@@ -242,13 +276,26 @@ export function useTimeEntries(session: Session) {
         return;
       }
 
+      if (canApproveAnyProject) {
+        setSummary(buildSummaryFromEntries([]));
+        return;
+      }
+
       setSummary(buildSummaryFromEntries(entries));
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
       setIsLoadingSummary(false);
     }
-  }, [entries, filters.fechaFin, filters.fechaInicio, filters.proyectoId, scope.canApprove, session.apiToken]);
+  }, [
+    canApproveAnyProject,
+    entries,
+    filters.fechaFin,
+    filters.fechaInicio,
+    filters.proyectoId,
+    scope.canApprove,
+    session.apiToken,
+  ]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -551,6 +598,7 @@ export function useTimeEntries(session: Session) {
   }
 
   return {
+    canApproveAnyProject,
     closeDecisionModal,
     closeDeleteModal,
     closeFormModal,

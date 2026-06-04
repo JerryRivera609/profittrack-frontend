@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
 import { projectService } from "../../proyectos/services/project-service";
+import { canManageProjectStages } from "../../proyectos/utils/project-permissions";
 import { stageService } from "../services/stage-service";
 import type {
   Stage,
@@ -25,7 +26,6 @@ const closedModalState: StageModalState = {
 };
 
 export function useStages(session: Session) {
-  const canManageStages = session.role !== "EMPLEADO";
   const [deleteTarget, setDeleteTarget] = useState<Stage | null>(null);
   const [error, setError] = useState("");
   const [form, setForm] = useState<StageFormValues>(() =>
@@ -51,6 +51,10 @@ export function useStages(session: Session) {
       null,
     [projects, selectedProjectId],
   );
+  const canManageStages = useMemo(
+    () => canManageProjectStages(session, selectedProject),
+    [selectedProject, session],
+  );
 
   const projectOptions = useMemo<StageCatalogOption[]>(
     () =>
@@ -69,7 +73,7 @@ export function useStages(session: Session) {
 
     try {
       const response =
-        session.role === "EMPLEADO"
+        session.role === "EMPLEADO" || session.role === "LIDER"
           ? await projectService.listMine(session.apiToken)
           : await projectService.list(session.apiToken);
       const scopedProjects = (response ?? []).filter((project) =>
