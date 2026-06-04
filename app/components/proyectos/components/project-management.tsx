@@ -18,6 +18,7 @@ import { ProjectList } from "./project-list";
 export function ProjectManagement() {
   const { session } = usePlatformAuth();
   const canManageProjects = session.role !== "EMPLEADO";
+  const canCreateProjects = session.role === "ADMIN" || session.role === "OWNER";
   const {
     assignmentError,
     assignmentForm,
@@ -80,7 +81,7 @@ export function ProjectManagement() {
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">
-            {canManageProjects ? (
+            {canCreateProjects ? (
               <Button icon={<Plus className="size-4" />} onClick={openCreateModal}>
                 Nuevo proyecto
               </Button>
@@ -98,6 +99,8 @@ export function ProjectManagement() {
         description={
           session.role === "EMPLEADO"
             ? "Consulta los proyectos que tienes asignados y entra a sus tareas para trabajar."
+            : session.role === "LIDER"
+              ? "Gestiona los proyectos que tienes asignados, su equipo, avance y tareas."
             : scope.isAdmin
             ? "Administra proyectos de todas las empresas con un flujo estandar de altas, ediciones y bajas."
             : `Administra los proyectos de ${session.companyName ?? "tu empresa"} con un flujo estandar de altas, ediciones y bajas.`

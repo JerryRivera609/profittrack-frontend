@@ -1,5 +1,13 @@
 import type { Session } from "../../../types/domain";
 
+export type ProjectPermission =
+  | "APROBAR_HORAS"
+  | "GENERAR_SNAPSHOT"
+  | "GESTIONAR_ETAPAS"
+  | "GESTIONAR_TAREAS"
+  | "VER_METRICAS"
+  | "VER_PROYECTO";
+
 export type Project = {
   id: number;
   empresaId: number;
@@ -26,6 +34,9 @@ export type Project = {
   estado: string;
   activo: boolean;
   etapas?: ProjectStage[];
+  miRolEnProyecto?: string | null;
+  misPermisos?: ProjectPermission[];
+  soyLiderDelProyecto?: boolean;
 };
 
 export type ProjectStage = {

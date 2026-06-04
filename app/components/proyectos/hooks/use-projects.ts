@@ -140,7 +140,7 @@ export function useProjects(session: Session) {
 
     try {
       const response =
-        session.role === "EMPLEADO"
+        session.role === "EMPLEADO" || session.role === "LIDER"
           ? await projectService.listMine(session.apiToken)
           : await projectService.list(session.apiToken);
       setProjects(response ?? []);
