@@ -16,8 +16,8 @@ import { TaskList } from "./task-list";
 
 export function TaskManagement() {
   const { session } = usePlatformAuth();
-  const canManageTasks = session.role !== "EMPLEADO";
   const {
+    canManageTasks,
     closeDeleteModal,
     closeFormModal,
     closeLifecycleModal,
@@ -30,6 +30,8 @@ export function TaskManagement() {
     isDeleting,
     isLoading,
     isLoadingCatalogs,
+    isLoadingProjectStages,
+    isLoadingProjectTeam,
     isSaving,
     lifecycleTarget,
     loadTasks,
@@ -43,12 +45,61 @@ export function TaskManagement() {
     selectedProjectId,
     setForm,
     setSelectedProjectId,
+    stageOptions,
     submitTask,
     taskTypeOptions,
     tasks,
   } = useTasks(session);
 
   const stats = useMemo(() => getTaskStats(tasks), [tasks]);
+  const responsibleOptions = useMemo(() => {
+    if (
+      form.empleadoAsignadoId &&
+      modalState.task &&
+      !employeeOptions.some((option) => option.value === form.empleadoAsignadoId)
+    ) {
+      return [
+        {
+          description: "Responsable actual de la tarea",
+          label: modalState.task.empleadoNombre,
+          value: form.empleadoAsignadoId,
+        },
+        ...employeeOptions,
+      ];
+    }
+
+    return employeeOptions;
+  }, [employeeOptions, form.empleadoAsignadoId, modalState.task]);
+  const taskStageOptions = useMemo(() => {
+    if (
+      form.etapaProyectoId &&
+      modalState.task &&
+      !stageOptions.some((option) => option.value === form.etapaProyectoId)
+    ) {
+      return [
+        {
+          description: "Etapa actual de la tarea",
+          label: modalState.task.etapaProyectoNombre ?? "Etapa actual",
+          value: form.etapaProyectoId,
+        },
+        ...stageOptions,
+      ];
+    }
+
+    return stageOptions;
+  }, [form.etapaProyectoId, modalState.task, stageOptions]);
+  const assignedToMeCount = useMemo(() => {
+    if (typeof session.empleadoId !== "number") {
+      return 0;
+    }
+
+    return tasks.filter(
+      (task) =>
+        task.activo &&
+        task.estado !== "FINALIZADO" &&
+        task.empleadoAsignadoId === session.empleadoId,
+    ).length;
+  }, [session.empleadoId, tasks]);
 
   return (
     <>
@@ -102,6 +153,13 @@ export function TaskManagement() {
 
           <StatusMessage message={notice} />
           <StatusMessage message={error} tone="error" />
+          {assignedToMeCount > 0 ? (
+            <StatusMessage
+              message={`Tienes ${assignedToMeCount} ${
+                assignedToMeCount === 1 ? "tarea asignada" : "tareas asignadas"
+              } en este proyecto.`}
+            />
+          ) : null}
 
           <TaskList
             canManageTasks={canManageTasks}
@@ -116,17 +174,36 @@ export function TaskManagement() {
 
       {canManageTasks ? (
         <TaskFormModal
-          employeeOptions={employeeOptions}
+          employeeOptions={responsibleOptions}
           form={form}
-          isLoadingCatalogs={isLoadingCatalogs}
+          isLoadingCatalogs={
+            isLoadingCatalogs || isLoadingProjectTeam || isLoadingProjectStages
+          }
           isSaving={isSaving}
           modalState={modalState}
-          onChange={(key, value) =>
-            setForm((current) => updateTaskFormValue(current, key, value))
-          }
+          onChange={(key, value) => {
+            if (key === "proyectoId") {
+              setSelectedProjectId(value);
+            }
+
+            setForm((current) => {
+              const nextForm = updateTaskFormValue(current, key, value);
+
+              if (key === "proyectoId" && current.proyectoId !== value) {
+                return {
+                  ...nextForm,
+                  empleadoAsignadoId: "",
+                  etapaProyectoId: "",
+                };
+              }
+
+              return nextForm;
+            });
+          }}
           onClose={closeFormModal}
           onSubmit={submitTask}
           projectOptions={projectOptions}
+          stageOptions={taskStageOptions}
           taskTypeOptions={taskTypeOptions}
         />
       ) : null}

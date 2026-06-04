@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   Clock3,
   FileText,
+  ListChecks,
   UserRound,
 } from "lucide-react";
 import type { FormEvent } from "react";
@@ -38,6 +39,7 @@ type TaskFormModalProps = {
   onClose: () => void;
   onSubmit: () => void;
   projectOptions: TaskCatalogOption[];
+  stageOptions: TaskCatalogOption[];
   taskTypeOptions: TaskCatalogOption[];
 };
 
@@ -51,6 +53,7 @@ export function TaskFormModal({
   onClose,
   onSubmit,
   projectOptions,
+  stageOptions,
   taskTypeOptions,
 }: TaskFormModalProps) {
   const isEdit = modalState.mode === "edit";
@@ -103,13 +106,32 @@ export function TaskFormModal({
               value={form.tipoTareaId}
             />
             <SmartSelectField
+              disabled={isLoadingCatalogs || stageOptions.length === 0}
+              helperText={
+                stageOptions.length === 0
+                  ? "Primero registra etapas activas para este proyecto."
+                  : "Selecciona la etapa del proyecto a la que pertenece."
+              }
+              icon={<ListChecks className="size-4" />}
+              label="Etapa"
+              onChange={(selectedValue) => onChange("etapaProyectoId", selectedValue)}
+              options={stageOptions}
+              placeholder={isLoadingCatalogs ? "Cargando etapas..." : "Selecciona una etapa"}
+              required
+              value={form.etapaProyectoId}
+            />
+            <SmartSelectField
               disabled={isLoadingCatalogs || employeeOptions.length === 0}
-              helperText="Selecciona el colaborador responsable."
+              helperText={
+                employeeOptions.length === 0
+                  ? "Primero asigna miembros al equipo del proyecto."
+                  : "Selecciona un miembro asignado al proyecto."
+              }
               icon={<UserRound className="size-4" />}
               label="Responsable"
               onChange={(selectedValue) => onChange("empleadoAsignadoId", selectedValue)}
               options={employeeOptions}
-              placeholder={isLoadingCatalogs ? "Cargando empleados..." : "Selecciona un responsable"}
+              placeholder={isLoadingCatalogs ? "Cargando equipo..." : "Selecciona un responsable"}
               required
               value={form.empleadoAsignadoId}
             />

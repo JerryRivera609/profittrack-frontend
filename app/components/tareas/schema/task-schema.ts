@@ -8,6 +8,10 @@ export function validateTaskForm(
     return "Selecciona un proyecto.";
   }
 
+  if (!form.etapaProyectoId.trim()) {
+    return "Selecciona una etapa del proyecto.";
+  }
+
   if (!form.tipoTareaId.trim()) {
     return "Selecciona un tipo de tarea.";
   }

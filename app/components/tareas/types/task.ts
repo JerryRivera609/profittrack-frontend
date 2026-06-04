@@ -3,6 +3,8 @@ import type { Session } from "../../../types/domain";
 export type Task = {
   id: number;
   proyectoId: number;
+  etapaProyectoId?: number | null;
+  etapaProyectoNombre?: string | null;
   tipoTareaId?: number | null;
   tipoTareaNombre: string;
   empleadoAsignadoId?: number | null;
@@ -21,6 +23,7 @@ export type Task = {
 
 export type CreateTaskPayload = {
   proyectoId: number;
+  etapaProyectoId: number;
   tipoTareaId: number;
   empleadoAsignadoId: number;
   nombre: string;
@@ -31,6 +34,7 @@ export type CreateTaskPayload = {
 };
 
 export type UpdateTaskPayload = {
+  etapaProyectoId?: number;
   tipoTareaId: number;
   empleadoAsignadoId: number;
   nombre: string;
@@ -47,6 +51,7 @@ export type TaskLifecycleAction = "start" | "finish";
 
 export type TaskFormValues = {
   proyectoId: string;
+  etapaProyectoId: string;
   tipoTareaId: string;
   empleadoAsignadoId: string;
   nombre: string;

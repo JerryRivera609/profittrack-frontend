@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
-import { employeeService } from "../../empleados/services/employee-service";
+import { stageService } from "../../etapas/services/stage-service";
+import { projectEmployeeService } from "../../proyectos/services/project-employee-service";
 import { projectService } from "../../proyectos/services/project-service";
+import type { Project } from "../../proyectos/types/project";
+import { canManageProjectTasks } from "../../proyectos/utils/project-permissions";
 import { taskTypeService } from "../../tipos-tarea/services/task-type-service";
 import { validateTaskForm } from "../schema/task-schema";
 import { taskService } from "../services/task-service";
@@ -15,8 +18,8 @@ import type {
   TaskModalState,
 } from "../types/task";
 import {
-  buildTaskLifecyclePayload,
   buildCreateTaskPayload,
+  buildTaskLifecyclePayload,
   buildUpdateTaskPayload,
   createTaskFormValues,
   createTaskScope,
@@ -39,6 +42,8 @@ export function useTasks(session: Session) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(true);
+  const [isLoadingProjectStages, setIsLoadingProjectStages] = useState(false);
+  const [isLoadingProjectTeam, setIsLoadingProjectTeam] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lifecycleTarget, setLifecycleTarget] = useState<{
     action: TaskLifecycleAction;
@@ -46,68 +51,58 @@ export function useTasks(session: Session) {
   } | null>(null);
   const [modalState, setModalState] = useState<TaskModalState>(closedModalState);
   const [notice, setNotice] = useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
   const [projectOptions, setProjectOptions] = useState<TaskCatalogOption[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [stageOptions, setStageOptions] = useState<TaskCatalogOption[]>([]);
   const [taskTypeOptions, setTaskTypeOptions] = useState<TaskCatalogOption[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+
+  const selectedProject = useMemo(
+    () =>
+      projects.find((project) => project.id.toString() === selectedProjectId) ??
+      null,
+    [projects, selectedProjectId],
+  );
+  const canManageTasks = useMemo(
+    () => canManageProjectTasks(session, selectedProject),
+    [selectedProject, session],
+  );
 
   const loadCatalogs = useCallback(async () => {
     setIsLoadingCatalogs(true);
 
     try {
-      if (session.role === "EMPLEADO") {
-        const projectsResponse = await projectService.listMine(session.apiToken);
-        const nextProjectOptions = (projectsResponse ?? []).map((project) => ({
-          description: `${project.clienteNombre} Â· ${project.codigo}`,
-          label: project.nombre,
-          value: project.id.toString(),
-        }));
-
-        setProjectOptions(nextProjectOptions);
-        setEmployeeOptions([]);
-        setTaskTypeOptions([]);
-        setSelectedProjectId((current) => current || nextProjectOptions[0]?.value || "");
-        return;
-      }
-
-      const [projectsResponse, employeesResponse, taskTypesResponse] = await Promise.all([
-        projectService.list(session.apiToken),
-        employeeService.list(session.apiToken),
-        taskTypeService.list(session.apiToken),
-      ]);
+      const projectsResponse =
+        session.role === "EMPLEADO" || session.role === "LIDER"
+          ? await projectService.listMine(session.apiToken)
+          : await projectService.list(session.apiToken);
 
       const scopedProjects = (projectsResponse ?? []).filter((project) =>
         scope.isAdmin || !scope.sessionEmpresaId
           ? true
           : project.empresaId === scope.sessionEmpresaId,
       );
-
-      const scopedEmployees = (employeesResponse ?? []).filter((employee) =>
-        scope.isAdmin || !scope.sessionEmpresaId
-          ? true
-          : employee.empresaId === scope.sessionEmpresaId,
+      const canManageAnyProject = scopedProjects.some((project) =>
+        canManageProjectTasks(session, project),
       );
+      const taskTypesResponse = canManageAnyProject
+        ? await taskTypeService.list(session.apiToken)
+        : [];
       const scopedTaskTypes = (taskTypesResponse ?? []).filter((taskType) =>
         scope.isAdmin || !scope.sessionEmpresaId
           ? true
           : taskType.empresaId === scope.sessionEmpresaId,
       );
-
       const nextProjectOptions = scopedProjects.map((project) => ({
-        description: `${project.clienteNombre} · ${project.codigo}`,
+        description: `${project.clienteNombre} - ${project.codigo}`,
         label: project.nombre,
         value: project.id.toString(),
       }));
 
+      setProjects(scopedProjects);
       setProjectOptions(nextProjectOptions);
-      setEmployeeOptions(
-        scopedEmployees.map((employee) => ({
-          description: `${employee.nombreRol} · ${employee.correo}`,
-          label: `${employee.nombres} ${employee.apellidos}`,
-          value: employee.id.toString(),
-        })),
-      );
-
+      setEmployeeOptions([]);
       setTaskTypeOptions(
         scopedTaskTypes.map((taskType) => ({
           description: `${taskType.nombreEmpresa} - ID ${taskType.empresaId}`,
@@ -115,14 +110,71 @@ export function useTasks(session: Session) {
           value: taskType.id.toString(),
         })),
       );
-
       setSelectedProjectId((current) => current || nextProjectOptions[0]?.value || "");
     } catch (catalogError) {
       setError(getErrorMessage(catalogError));
     } finally {
       setIsLoadingCatalogs(false);
     }
-  }, [scope, session.apiToken, session.role]);
+  }, [scope, session]);
+
+  const loadProjectTeam = useCallback(async () => {
+    if (!selectedProjectId || !canManageTasks) {
+      setEmployeeOptions([]);
+      return;
+    }
+
+    setIsLoadingProjectTeam(true);
+
+    try {
+      const response = await projectEmployeeService.listByProject(
+        Number.parseInt(selectedProjectId, 10),
+        session.apiToken,
+      );
+      setEmployeeOptions(
+        (response ?? [])
+          .filter((assignment) => assignment.activo)
+          .map((assignment) => ({
+            description: `${assignment.rolAsignado} - asignado al proyecto`,
+            label: assignment.empleadoNombre,
+            value: assignment.empleadoId.toString(),
+          })),
+      );
+    } catch (teamError) {
+      setError(getErrorMessage(teamError));
+    } finally {
+      setIsLoadingProjectTeam(false);
+    }
+  }, [canManageTasks, selectedProjectId, session.apiToken]);
+
+  const loadProjectStages = useCallback(async () => {
+    if (!selectedProjectId || !canManageTasks) {
+      setStageOptions([]);
+      return;
+    }
+
+    setIsLoadingProjectStages(true);
+
+    try {
+      const response = await stageService.listByProject(
+        Number.parseInt(selectedProjectId, 10),
+        session.apiToken,
+      );
+      setStageOptions(
+        (response ?? [])
+          .filter((stage) => stage.activo)
+          .map((stage) => ({
+            description: `Orden ${stage.orden} - ${stage.horasPlanificadas} h`,
+            label: stage.nombre,
+            value: stage.id.toString(),
+          })),
+      );
+    } catch (stageError) {
+      setError(getErrorMessage(stageError));
+    } finally {
+      setIsLoadingProjectStages(false);
+    }
+  }, [canManageTasks, selectedProjectId, session.apiToken]);
 
   const loadTasks = useCallback(async () => {
     if (!selectedProjectId) {
@@ -140,7 +192,9 @@ export function useTasks(session: Session) {
         session.apiToken,
       );
       const nextTasks =
-        session.role === "EMPLEADO" && typeof session.empleadoId === "number"
+        !canManageTasks &&
+        session.role === "EMPLEADO" &&
+        typeof session.empleadoId === "number"
           ? (response ?? []).filter((task) => task.empleadoAsignadoId === session.empleadoId)
           : response ?? [];
 
@@ -150,7 +204,13 @@ export function useTasks(session: Session) {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProjectId, session.apiToken, session.empleadoId, session.role]);
+  }, [
+    canManageTasks,
+    selectedProjectId,
+    session.apiToken,
+    session.empleadoId,
+    session.role,
+  ]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -168,7 +228,35 @@ export function useTasks(session: Session) {
     return () => window.clearTimeout(timeoutId);
   }, [loadTasks]);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadProjectTeam();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadProjectTeam]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadProjectStages();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadProjectStages]);
+
+  function updateSelectedProjectId(projectId: string) {
+    setSelectedProjectId(projectId);
+    setEmployeeOptions([]);
+    setStageOptions([]);
+    setError("");
+    setNotice("");
+  }
+
   function openCreateModal() {
+    if (!canManageTasks) {
+      return;
+    }
+
     setError("");
     setForm(createTaskFormValues(null, selectedProjectId));
     setModalState({
@@ -179,6 +267,10 @@ export function useTasks(session: Session) {
   }
 
   function openEditModal(task: Task) {
+    if (!canManageTasks) {
+      return;
+    }
+
     setError("");
     setNotice("");
     setForm(createTaskFormValues(task, selectedProjectId));
@@ -199,12 +291,20 @@ export function useTasks(session: Session) {
   }
 
   function openDeleteModal(task: Task) {
+    if (!canManageTasks) {
+      return;
+    }
+
     setDeleteTarget(task);
     setError("");
     setNotice("");
   }
 
   function openLifecycleModal(task: Task, action: TaskLifecycleAction) {
+    if (!canManageTasks) {
+      return;
+    }
+
     setLifecycleTarget({ action, task });
     setError("");
     setNotice("");
@@ -227,6 +327,12 @@ export function useTasks(session: Session) {
   }
 
   async function submitTask() {
+    if (!canManageTasks) {
+      setError("No tienes permisos para gestionar tareas en este proyecto.");
+      setNotice("");
+      return false;
+    }
+
     const validationError = validateTaskForm(form, modalState.task);
 
     if (validationError) {
@@ -314,6 +420,7 @@ export function useTasks(session: Session) {
   }
 
   return {
+    canManageTasks,
     closeDeleteModal,
     closeFormModal,
     closeLifecycleModal,
@@ -326,6 +433,8 @@ export function useTasks(session: Session) {
     isDeleting,
     isLoading,
     isLoadingCatalogs,
+    isLoadingProjectStages,
+    isLoadingProjectTeam,
     isSaving,
     lifecycleTarget,
     loadTasks,
@@ -337,9 +446,11 @@ export function useTasks(session: Session) {
     openLifecycleModal,
     projectOptions,
     scope,
+    selectedProject,
     selectedProjectId,
     setForm,
-    setSelectedProjectId,
+    setSelectedProjectId: updateSelectedProjectId,
+    stageOptions,
     submitTask,
     taskTypeOptions,
     tasks,

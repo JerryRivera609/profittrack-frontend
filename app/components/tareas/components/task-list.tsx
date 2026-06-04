@@ -70,6 +70,9 @@ export function TaskList({
                     <td className="py-3 pr-4">
                       <p className="font-semibold text-slate-900">{task.nombre}</p>
                       <p className="text-slate-500">{task.tipoTareaNombre}</p>
+                      <p className="text-slate-500">
+                        Etapa: {task.etapaProyectoNombre ?? "Sin etapa"}
+                      </p>
                       <p className="text-xs text-slate-400">{task.descripcion}</p>
                     </td>
                     <td className="py-3 pr-4 text-slate-600">
