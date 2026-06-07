@@ -7,6 +7,7 @@ import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
 import { StatusMessage } from "../../ui/status-message";
+import { ToastMessage } from "../../ui/toast-message";
 import { useProjects } from "../hooks/use-projects";
 import { getProjectStats } from "../utils/project-format";
 import { updateProjectFormValue } from "../utils/project-form";
@@ -17,6 +18,7 @@ import { ProjectList } from "./project-list";
 export function ProjectManagement() {
   const { session } = usePlatformAuth();
   const canManageProjects = session.role !== "EMPLEADO";
+  const canCreateProjects = session.role === "ADMIN" || session.role === "OWNER";
   const {
     assignmentError,
     assignmentForm,
@@ -71,10 +73,15 @@ export function ProjectManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">
-            {canManageProjects ? (
+            {canCreateProjects ? (
               <Button icon={<Plus className="size-4" />} onClick={openCreateModal}>
                 Nuevo proyecto
               </Button>
@@ -92,6 +99,8 @@ export function ProjectManagement() {
         description={
           session.role === "EMPLEADO"
             ? "Consulta los proyectos que tienes asignados y entra a sus tareas para trabajar."
+            : session.role === "LIDER"
+              ? "Gestiona los proyectos que tienes asignados, su equipo, avance y tareas."
             : scope.isAdmin
             ? "Administra proyectos de todas las empresas con un flujo estandar de altas, ediciones y bajas."
             : `Administra los proyectos de ${session.companyName ?? "tu empresa"} con un flujo estandar de altas, ediciones y bajas.`
@@ -126,6 +135,7 @@ export function ProjectManagement() {
       {canManageProjects ? (
         <ProjectFormModal
           clientOptions={clientOptions}
+          error={error}
           form={form}
           isLoadingCatalogs={isLoadingCatalogs}
           isSaving={isSaving}

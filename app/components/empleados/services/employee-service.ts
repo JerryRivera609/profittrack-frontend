@@ -15,7 +15,7 @@ export const employeeService = {
     }),
   list: (token?: string) =>
     apiRequest<Employee[]>("/api/empleados", {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   remove: (id: number, token?: string) =>

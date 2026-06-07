@@ -15,7 +15,7 @@ export const projectService = {
     }),
   list: (token?: string) =>
     apiRequest<Project[]>("/api/proyectos", {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   listMine: (token?: string) =>

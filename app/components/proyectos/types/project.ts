@@ -1,5 +1,13 @@
 import type { Session } from "../../../types/domain";
 
+export type ProjectPermission =
+  | "APROBAR_HORAS"
+  | "GENERAR_SNAPSHOT"
+  | "GESTIONAR_ETAPAS"
+  | "GESTIONAR_TAREAS"
+  | "VER_METRICAS"
+  | "VER_PROYECTO";
+
 export type Project = {
   id: number;
   empresaId: number;
@@ -25,6 +33,29 @@ export type Project = {
   precioVenta: number;
   estado: string;
   activo: boolean;
+  etapas?: ProjectStage[];
+  miRolEnProyecto?: string | null;
+  misPermisos?: ProjectPermission[];
+  soyLiderDelProyecto?: boolean;
+};
+
+export type ProjectStage = {
+  id: number;
+  empresaId: number;
+  proyectoId: number;
+  proyectoNombre: string;
+  nombre: string;
+  descripcion: string;
+  orden: number;
+  horasPlanificadas: number;
+  horasTareasPlanificadas: number;
+  horasReales: number;
+  fechaInicioPlanificada?: string | null;
+  fechaFinPlanificada?: string | null;
+  fechaInicioReal?: string | null;
+  fechaFinReal?: string | null;
+  estado: string;
+  activo: boolean;
 };
 
 export type CreateProjectPayload = {
@@ -41,6 +72,17 @@ export type CreateProjectPayload = {
   presupuestoPlanificado: number;
   margenPlanificado: number;
   precioVenta: number;
+  etapas: CreateProjectStagePayload[];
+};
+
+export type CreateProjectStagePayload = {
+  proyectoId: number;
+  nombre: string;
+  descripcion: string;
+  orden: number;
+  horasPlanificadas: number;
+  fechaInicioPlanificada: string;
+  fechaFinPlanificada: string;
 };
 
 export type UpdateProjectPayload = {
@@ -66,6 +108,7 @@ export type ProjectFormValues = {
   codigo: string;
   descripcion: string;
   empresaId: string;
+  etapas: ProjectStageFormValues[];
   estado: string;
   fechaFinPlanificada: string;
   fechaInicioPlanificada: string;
@@ -76,6 +119,14 @@ export type ProjectFormValues = {
   precioVenta: string;
   presupuestoPlanificado: string;
   tipoServicioId: string;
+};
+
+export type ProjectStageFormValues = {
+  nombre: string;
+  descripcion: string;
+  horasPlanificadas: string;
+  fechaInicioPlanificada: string;
+  fechaFinPlanificada: string;
 };
 
 export type ProjectModalMode = "create" | "edit";

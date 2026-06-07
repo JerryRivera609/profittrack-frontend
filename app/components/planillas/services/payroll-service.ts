@@ -11,12 +11,12 @@ export const payrollService = {
     }),
   get: (id: number, token?: string) =>
     apiRequest<Payroll>(`/api/planillas/${id}`, {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   list: (token?: string) =>
     apiRequest<Payroll[]>("/api/planillas", {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
 };

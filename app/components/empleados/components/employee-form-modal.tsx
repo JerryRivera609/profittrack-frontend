@@ -21,10 +21,12 @@ import {
   ModalFooter,
   ModalHeader,
 } from "../../ui/modal";
+import { SmartSelectField, type SmartSelectOption } from "../../ui/smart-select-field";
 import { TextField } from "../../ui/text-field";
 
 type EmployeeFormModalProps = {
   form: EmployeeFormValues;
+  isLoadingRoles: boolean;
   isSaving: boolean;
   modalState: EmployeeModalState;
   onChange: <Key extends keyof EmployeeFormValues>(
@@ -33,16 +35,19 @@ type EmployeeFormModalProps = {
   ) => void;
   onClose: () => void;
   onSubmit: () => void;
+  roleOptions: SmartSelectOption[];
   scope: EmployeeScope;
 };
 
 export function EmployeeFormModal({
   form,
+  isLoadingRoles,
   isSaving,
   modalState,
   onChange,
   onClose,
   onSubmit,
+  roleOptions,
   scope,
 }: EmployeeFormModalProps) {
   const isEdit = modalState.mode === "edit";
@@ -96,13 +101,21 @@ export function EmployeeFormModal({
               </div>
             )}
 
-            <TextField
+            <SmartSelectField
+              disabled={isLoadingRoles || roleOptions.length === 0}
+              helperText={
+                isLoadingRoles
+                  ? "Cargando roles..."
+                  : roleOptions.length === 0
+                    ? "No hay roles activos disponibles para esta empresa."
+                    : "Selecciona un rol configurado."
+              }
               icon={<BadgeCheck className="size-4" />}
-              label="Rol ID"
-              min="1"
-              onChange={(event) => onChange("rolId", event.target.value)}
+              label="Rol"
+              onChange={(selectedValue) => onChange("rolId", selectedValue)}
+              options={roleOptions}
+              placeholder="Selecciona un rol"
               required
-              type="number"
               value={form.rolId}
             />
             <TextField

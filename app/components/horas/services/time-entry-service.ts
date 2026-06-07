@@ -50,12 +50,12 @@ export const timeEntryService = {
     }),
   listByProject: (projectId: number, token?: string) =>
     apiRequest<TimeEntry[]>(`/api/registro-horas/proyecto/${projectId}`, {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   listMine: (token?: string) =>
     apiRequest<TimeEntry[]>("/api/registro-horas/mis-horas", {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   reject: (id: number, token?: string) =>
@@ -72,7 +72,7 @@ export const timeEntryService = {
     }),
   summary: (filters: SummaryFilters, token?: string) =>
     apiRequest<TimeEntrySummary>(buildSummaryPath(filters), {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
 };

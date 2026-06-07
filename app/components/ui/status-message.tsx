@@ -1,7 +1,7 @@
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "../../lib/class-names";
 
-type StatusTone = "error" | "success";
+type StatusTone = "error" | "success" | "warning";
 
 type StatusMessageProps = {
   message?: string;
@@ -11,6 +11,7 @@ type StatusMessageProps = {
 const toneClasses: Record<StatusTone, string> = {
   error: "border-rose-200 bg-rose-50 text-rose-800",
   success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-800",
 };
 
 export function StatusMessage({
@@ -21,7 +22,12 @@ export function StatusMessage({
     return null;
   }
 
-  const Icon = tone === "success" ? CheckCircle2 : AlertCircle;
+  const Icon =
+    tone === "success"
+      ? CheckCircle2
+      : tone === "warning"
+        ? AlertTriangle
+        : AlertCircle;
 
   return (
     <div

@@ -23,7 +23,7 @@ export function validateEmployeeForm(
   }
 
   if (!form.rolId.trim()) {
-    return "Ingresa el rolId del empleado.";
+    return "Selecciona un rol para el empleado.";
   }
 
   if (!form.nombres.trim() || !form.apellidos.trim()) {

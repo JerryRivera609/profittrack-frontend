@@ -1,7 +1,8 @@
 "use client";
 
-import { Plus, RefreshCw, UsersRound } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
+import type { SmartSelectOption } from "../../ui/smart-select-field";
 import { usePlatformAuth } from "../../platform/platform-auth-context";
 import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
@@ -24,13 +25,16 @@ export function EmployeeManagement() {
     form,
     isDeleting,
     isLoading,
+    isLoadingRoles,
     isSaving,
     loadEmployees,
+    loadRoles,
     modalState,
     notice,
     openCreateModal,
     openDeleteModal,
     openEditModal,
+    roles,
     scope,
     setForm,
     submitEmployee,
@@ -38,6 +42,30 @@ export function EmployeeManagement() {
   } = useEmployees(session);
 
   const stats = useMemo(() => getEmployeeStats(visibleEmployees), [visibleEmployees]);
+  const roleOptions = useMemo<SmartSelectOption[]>(() => {
+    const options = roles.map((role) => ({
+      description: `${role.nombreEmpresa} - ID rol ${role.id}`,
+      label: role.nombre,
+      value: role.id.toString(),
+    }));
+
+    if (
+      form.rolId &&
+      modalState.employee &&
+      !options.some((option) => option.value === form.rolId)
+    ) {
+      return [
+        {
+          description: "Rol actual del empleado",
+          label: modalState.employee.nombreRol,
+          value: form.rolId,
+        },
+        ...options,
+      ];
+    }
+
+    return options;
+  }, [form.rolId, modalState.employee, roles]);
 
   return (
     <>
@@ -48,9 +76,13 @@ export function EmployeeManagement() {
               Nuevo empleado
             </Button>
             <Button
-              disabled={isLoading}
-              icon={<RefreshCw className={isLoading ? "size-4 animate-spin" : "size-4"} />}
-              onClick={() => void loadEmployees()}
+              disabled={isLoading || isLoadingRoles}
+              icon={
+                <RefreshCw
+                  className={isLoading || isLoadingRoles ? "size-4 animate-spin" : "size-4"}
+                />
+              }
+              onClick={() => void Promise.all([loadEmployees(), loadRoles()])}
               variant="secondary"
             >
               Actualizar
@@ -88,13 +120,26 @@ export function EmployeeManagement() {
 
       <EmployeeFormModal
         form={form}
+        isLoadingRoles={isLoadingRoles}
         isSaving={isSaving}
         modalState={modalState}
         onChange={(key, value) =>
-          setForm((current) => updateEmployeeFormValue(current, key, value))
+          setForm((current) => {
+            const nextForm = updateEmployeeFormValue(current, key, value);
+
+            if (key === "empresaId" && current.empresaId !== value) {
+              return {
+                ...nextForm,
+                rolId: "",
+              };
+            }
+
+            return nextForm;
+          })
         }
         onClose={closeFormModal}
         onSubmit={submitEmployee}
+        roleOptions={roleOptions}
         scope={scope}
       />
 

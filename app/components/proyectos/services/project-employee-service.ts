@@ -16,7 +16,7 @@ export const projectEmployeeService = {
     apiRequest<ProjectEmployeeAssignment[]>(
       `/api/proyecto-empleados/proyecto/${projectId}`,
       {
-        credentials: "omit",
+        credentials: "include",
         token,
       },
     ),

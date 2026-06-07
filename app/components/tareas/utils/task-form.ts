@@ -10,6 +10,7 @@ import type {
 
 const emptyForm: TaskFormValues = {
   proyectoId: "",
+  etapaProyectoId: "",
   tipoTareaId: "",
   empleadoAsignadoId: "",
   nombre: "",
@@ -41,6 +42,7 @@ export function createTaskFormValues(
 
   return {
     proyectoId: task.proyectoId.toString(),
+    etapaProyectoId: normalizeId(task.etapaProyectoId),
     tipoTareaId: normalizeId(task.tipoTareaId),
     empleadoAsignadoId: normalizeId(task.empleadoAsignadoId),
     nombre: task.nombre,
@@ -66,6 +68,7 @@ export function updateTaskFormValue(
 export function buildCreateTaskPayload(form: TaskFormValues): CreateTaskPayload {
   return {
     proyectoId: Number.parseInt(form.proyectoId, 10),
+    etapaProyectoId: Number.parseInt(form.etapaProyectoId, 10),
     tipoTareaId: Number.parseInt(form.tipoTareaId, 10),
     empleadoAsignadoId: Number.parseInt(form.empleadoAsignadoId, 10),
     nombre: form.nombre.trim(),
@@ -78,6 +81,7 @@ export function buildCreateTaskPayload(form: TaskFormValues): CreateTaskPayload 
 
 export function buildUpdateTaskPayload(form: TaskFormValues): UpdateTaskPayload {
   return {
+    etapaProyectoId: Number.parseInt(form.etapaProyectoId, 10),
     tipoTareaId: Number.parseInt(form.tipoTareaId, 10),
     empleadoAsignadoId: Number.parseInt(form.empleadoAsignadoId, 10),
     nombre: form.nombre.trim(),
@@ -95,7 +99,11 @@ export function buildTaskLifecyclePayload(
 ): UpdateTaskPayload {
   const today = new Date().toISOString().slice(0, 10);
 
+  const stageId =
+    typeof task.etapaProyectoId === "number" ? task.etapaProyectoId : undefined;
+
   return {
+    ...(stageId ? { etapaProyectoId: stageId } : {}),
     tipoTareaId: task.tipoTareaId ?? 0,
     empleadoAsignadoId: task.empleadoAsignadoId ?? 0,
     nombre: task.nombre,

@@ -29,10 +29,6 @@ export function validateProjectForm(
     return "Completa el nombre del proyecto.";
   }
 
-  if (!form.descripcion.trim()) {
-    return "Completa la descripcion.";
-  }
-
   if (!form.fechaInicioPlanificada) {
     return "Selecciona la fecha de inicio planificada.";
   }
@@ -41,9 +37,15 @@ export function validateProjectForm(
     return "Selecciona la fecha de fin planificada.";
   }
 
+  if (form.fechaInicioPlanificada > form.fechaFinPlanificada) {
+    return "La fecha de inicio no puede ser posterior al fin planificado.";
+  }
+
   if (!form.horasPlanificadas.trim()) {
     return "Completa las horas planificadas.";
   }
+
+  const plannedHours = parseDecimalInput(form.horasPlanificadas);
 
   if (!form.presupuestoPlanificado.trim()) {
     return "Completa el presupuesto planificado.";
@@ -61,6 +63,29 @@ export function validateProjectForm(
     return "Completa el estado del proyecto.";
   }
 
+  const stageHours = form.etapas.reduce(
+    (total, stage) => total + parseDecimalInput(stage.horasPlanificadas),
+    0,
+  );
+
+  if (form.etapas.length > 0 && !areHoursEqual(plannedHours, stageHours)) {
+    return `Las horas planificadas del proyecto deben coincidir con la suma de horas de sus etapas. Proyecto: ${formatHours(plannedHours)} h, etapas: ${formatHours(stageHours)} h.`;
+  }
+
+  for (const [index, stage] of form.etapas.entries()) {
+    const stageNumber = index + 1;
+
+    if (!stage.nombre.trim()) {
+      return `Completa el nombre de la etapa ${stageNumber}.`;
+    }
+
+    if (stage.fechaInicioPlanificada && stage.fechaFinPlanificada) {
+      if (stage.fechaInicioPlanificada > stage.fechaFinPlanificada) {
+        return `La etapa ${stageNumber} tiene una fecha de inicio posterior a su fecha de fin.`;
+      }
+    }
+  }
+
   return "";
 }
 
@@ -68,4 +93,18 @@ export function resolveEmpresaId(form: ProjectFormValues, scope: ProjectScope) {
   return scope.isAdmin
     ? form.empresaId.trim()
     : scope.sessionEmpresaId?.toString() ?? "";
+}
+
+function parseDecimalInput(value: string) {
+  const parsedValue = Number.parseFloat(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+}
+
+function areHoursEqual(left: number, right: number) {
+  return Math.abs(left - right) <= 0.01;
+}
+
+function formatHours(value: number) {
+  return value.toFixed(2);
 }

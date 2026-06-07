@@ -15,7 +15,7 @@ export const serviceTypeService = {
     }),
   list: (token?: string) =>
     apiRequest<ServiceType[]>("/api/tipos-servicio", {
-      credentials: "omit",
+      credentials: "include",
       token,
     }),
   remove: (id: number, token?: string) =>
