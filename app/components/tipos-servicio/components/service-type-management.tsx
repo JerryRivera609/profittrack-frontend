@@ -1,12 +1,13 @@
 "use client";
 
-import { Plus, RefreshCw, Settings } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { usePlatformAuth } from "../../platform/platform-auth-context";
 import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
 import { StatusMessage } from "../../ui/status-message";
+import { ToastMessage } from "../../ui/toast-message";
 import { useServiceTypes } from "../hooks/use-service-types";
 import { getServiceTypeStats } from "../utils/service-type-format";
 import { updateServiceTypeFormValue } from "../utils/service-type-form";
@@ -41,6 +42,11 @@ export function ServiceTypeManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">

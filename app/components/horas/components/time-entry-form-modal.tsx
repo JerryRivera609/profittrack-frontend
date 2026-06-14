@@ -3,10 +3,9 @@
 import {
   AlarmClockCheck,
   BriefcaseBusiness,
-  Clock3,
+  ClipboardCheck,
   FileText,
-  PauseCircle,
-  PlayCircle,
+  ListChecks,
 } from "lucide-react";
 import type { FormEvent } from "react";
 import type {
@@ -27,7 +26,7 @@ import { TextField } from "../../ui/text-field";
 
 type TimeEntryFormModalProps = {
   form: TimeEntryFormValues;
-  isLoadingTasks: boolean;
+  isLoadingCatalogs: boolean;
   isSaving: boolean;
   modalState: TimeEntryModalState;
   onChange: <Key extends keyof TimeEntryFormValues>(
@@ -35,27 +34,23 @@ type TimeEntryFormModalProps = {
     value: TimeEntryFormValues[Key],
   ) => void;
   onClose: () => void;
-  onFinishNow: () => void;
-  onStartNow: () => void;
   onSubmit: () => void;
   projectOptions: TimeEntryCatalogOption[];
-  showQuickCapture?: boolean;
-  taskOptions: TimeEntryCatalogOption[];
+  stageOptions: TimeEntryCatalogOption[];
+  taskTypeOptions: TimeEntryCatalogOption[];
 };
 
 export function TimeEntryFormModal({
   form,
-  isLoadingTasks,
+  isLoadingCatalogs,
   isSaving,
   modalState,
   onChange,
   onClose,
-  onFinishNow,
-  onStartNow,
   onSubmit,
   projectOptions,
-  showQuickCapture = true,
-  taskOptions,
+  stageOptions,
+  taskTypeOptions,
 }: TimeEntryFormModalProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,14 +63,13 @@ export function TimeEntryFormModal({
         <ModalHeader>
           <div>
             <p className="text-sm font-medium text-slate-500">
-              Registro productivo
+              Tarea realizada
             </p>
             <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
-              Nueva sesion de trabajo
+              Registrar trabajo con horas
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Registra tiempo por tarea. El sistema calcula las horas y deja la
-              aprobacion lista para revision del lider.
+              La tarea y sus horas se crean juntas y quedan pendientes de aprobacion.
             </p>
           </div>
           <ModalCloseButton onClose={onClose} />
@@ -93,93 +87,50 @@ export function TimeEntryFormModal({
               value={form.proyectoId}
             />
             <SmartSelectField
-              disabled={isLoadingTasks || taskOptions.length === 0}
-              icon={<AlarmClockCheck className="size-4" />}
-              label="Tarea"
-              onChange={(value) => onChange("tareaId", value)}
-              options={taskOptions}
-              placeholder={isLoadingTasks ? "Cargando tareas..." : "Selecciona una tarea"}
-              required
-              value={form.tareaId}
+              disabled={isLoadingCatalogs || stageOptions.length === 0}
+              icon={<ListChecks className="size-4" />}
+              label="Etapa"
+              onChange={(value) => onChange("etapaProyectoId", value)}
+              options={stageOptions}
+              placeholder={isLoadingCatalogs ? "Cargando etapas..." : "Sin etapa"}
+              value={form.etapaProyectoId}
+            />
+            <SmartSelectField
+              disabled={isLoadingCatalogs || taskTypeOptions.length === 0}
+              icon={<ClipboardCheck className="size-4" />}
+              label="Tipo de tarea"
+              onChange={(value) => onChange("tipoTareaId", value)}
+              options={taskTypeOptions}
+              placeholder={isLoadingCatalogs ? "Cargando tipos..." : "Sin tipo"}
+              value={form.tipoTareaId}
             />
             <TextField
-              icon={<Clock3 className="size-4" />}
-              label="Fecha de trabajo"
-              onChange={(event) => onChange("fechaTrabajo", event.target.value)}
+              className="md:col-span-2"
+              icon={<ClipboardCheck className="size-4" />}
+              label="Nombre de la tarea realizada"
+              onChange={(event) => onChange("nombre", event.target.value)}
+              placeholder="Ejemplo: Implementar validacion de pagos"
               required
-              type="date"
-              value={form.fechaTrabajo}
-            />
-            <TextField
-              icon={<PlayCircle className="size-4" />}
-              label="Hora de inicio"
-              onChange={(event) => onChange("horaIngreso", event.target.value)}
-              required
-              type="datetime-local"
-              value={form.horaIngreso}
-            />
-            <TextField
-              icon={<PauseCircle className="size-4" />}
-              label="Hora de fin"
-              onChange={(event) => onChange("horaSalida", event.target.value)}
-              required
-              type="datetime-local"
-              value={form.horaSalida}
-            />
-            <TextField
-              icon={<Clock3 className="size-4" />}
-              label="Minutos de descanso"
-              min="0"
-              onChange={(event) => onChange("minutosDescanso", event.target.value)}
-              required
-              type="number"
-              value={form.minutosDescanso}
+              value={form.nombre}
             />
             <TextField
               icon={<AlarmClockCheck className="size-4" />}
-              label="Horas trabajadas"
+              label="Horas dedicadas"
               min="0"
-              onChange={(event) => onChange("horasTrabajadas", event.target.value)}
+              onChange={(event) => onChange("horasDedicadas", event.target.value)}
               required
               step="0.01"
               type="number"
-              value={form.horasTrabajadas}
+              value={form.horasDedicadas}
             />
-            {showQuickCapture ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    icon={<PlayCircle className="size-4" />}
-                    onClick={onStartNow}
-                    type="button"
-                    variant="secondary"
-                  >
-                    Iniciar ahora
-                  </Button>
-                  <Button
-                    icon={<PauseCircle className="size-4" />}
-                    onClick={onFinishNow}
-                    type="button"
-                    variant="secondary"
-                  >
-                    Finalizar ahora
-                  </Button>
-                </div>
-                <p className="mt-3 text-sm text-slate-600">
-                  Usa este flujo como temporizador por tarea. Si trabajaste fuera del
-                  sistema, puedes registrar manualmente las horas ajustando inicio, fin y descanso.
-                </p>
-              </div>
-            ) : null}
             <label className="block text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
-              Comentario de trabajo
+              Descripcion
               <span className="mt-1.5 flex rounded-lg border border-slate-200 bg-white px-3 py-3 text-slate-500 transition focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-100">
                 <FileText className="mt-0.5 size-4 shrink-0" />
                 <textarea
                   className="min-h-28 min-w-0 flex-1 resize-y bg-transparent pl-2 text-sm text-slate-950 outline-none placeholder:text-slate-400"
                   onChange={(event) => onChange("descripcion", event.target.value)}
-                  placeholder="Ejemplo: Se avanzó la implementación del módulo de clientes y se corrigieron validaciones del formulario."
-                  required
+                  placeholder="Opcional: agrega contexto para que el lider revise la declaracion."
                   value={form.descripcion}
                 />
               </span>
@@ -192,7 +143,7 @@ export function TimeEntryFormModal({
             Cancelar
           </Button>
           <Button disabled={isSaving} type="submit">
-            {isSaving ? "Guardando..." : "Registrar horas"}
+            {isSaving ? "Guardando..." : "Registrar tarea"}
           </Button>
         </ModalFooter>
       </form>

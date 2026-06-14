@@ -127,7 +127,7 @@ export async function apiRequest<T>(
   }
   const responseText = await response.text();
   if (!response.ok) {
-    const detail = responseText ? `: ${responseText}` : "";
+    const detail = getResponseErrorDetail(responseText);
     throw new ApiRequestError(
       response.status,
       `La API respondio ${response.status}${detail}`,
@@ -213,5 +213,29 @@ async function refreshSessionToken() {
       getStoredAuthToken();
   } finally {
     refreshPromise = null;
+  }
+}
+
+function getResponseErrorDetail(responseText: string) {
+  if (!responseText) {
+    return "";
+  }
+
+  try {
+    const parsedBody = JSON.parse(responseText) as {
+      detalle?: string;
+      error?: string;
+      mensaje?: string;
+      message?: string;
+    };
+    const backendMessage =
+      parsedBody.message ??
+      parsedBody.mensaje ??
+      parsedBody.error ??
+      parsedBody.detalle;
+
+    return backendMessage ? `: ${backendMessage}` : `: ${responseText}`;
+  } catch {
+    return `: ${responseText}`;
   }
 }

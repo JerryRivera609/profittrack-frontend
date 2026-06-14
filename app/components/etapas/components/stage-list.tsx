@@ -4,7 +4,6 @@ import { ListChecks, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import type { Stage } from "../types/stage";
 import {
   formatDecimalValue,
-  formatStageDate,
   formatStageStatus,
 } from "../utils/stage-form";
 import { Button } from "../../ui/button";
@@ -55,7 +54,7 @@ export function StageList({
             description={
               isInactiveView
                 ? "No hay etapas inactivas para este proyecto."
-                : "Cuando registres etapas para este proyecto, apareceran aqui con sus horas, fechas y estado."
+                : "Cuando registres etapas para este proyecto, apareceran aqui con sus horas y estado."
             }
             icon={<ListChecks className="size-6" />}
             title={isInactiveView ? "Sin etapas inactivas" : "No hay etapas"}
@@ -67,7 +66,6 @@ export function StageList({
                 <tr className="border-b border-slate-200">
                   <th className="py-3 pr-4 font-medium">Etapa</th>
                   <th className="py-3 pr-4 font-medium">Horas</th>
-                  <th className="py-3 pr-4 font-medium">Fechas</th>
                   <th className="py-3 pr-4 font-medium">Estado</th>
                   <th className="py-3 text-right font-medium">Acciones</th>
                 </tr>
@@ -85,12 +83,6 @@ export function StageList({
                       <p>Plan: {formatDecimalValue(stage.horasPlanificadas)} h</p>
                       <p>Tareas: {formatDecimalValue(stage.horasTareasPlanificadas)} h</p>
                       <p>Real: {formatDecimalValue(stage.horasReales)} h</p>
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">
-                      <p>Inicio plan: {formatStageDate(stage.fechaInicioPlanificada)}</p>
-                      <p>Fin plan: {formatStageDate(stage.fechaFinPlanificada)}</p>
-                      <p>Inicio real: {formatStageDate(stage.fechaInicioReal)}</p>
-                      <p>Fin real: {formatStageDate(stage.fechaFinReal)}</p>
                     </td>
                     <td className="py-3 pr-4 text-slate-600">
                       <p className="capitalize">{formatStageStatus(stage.estado)}</p>

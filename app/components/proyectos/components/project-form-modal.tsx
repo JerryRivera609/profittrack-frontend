@@ -427,7 +427,7 @@ export function ProjectFormModal({
                       Etapas del proyecto
                     </p>
                     <p className="mt-1 max-w-2xl text-xs text-slate-500">
-                      Puedes usar una plantilla para repartir fechas y horas, o agregar
+                      Puedes usar una plantilla para repartir horas, o agregar
                       etapas puntuales. El orden se calcula automaticamente.
                     </p>
                   </div>
@@ -459,7 +459,7 @@ export function ProjectFormModal({
                     type="button"
                   >
                     <Sparkles className="size-3.5" />
-                    Ajustar fechas y horas
+                    Ajustar horas
                   </button>
                 </div>
               </div>
@@ -553,36 +553,6 @@ export function ProjectFormModal({
                         >
                           <Trash2 className="size-4" />
                         </button>
-                      </div>
-                      <div>
-                        <CalendarField
-                          icon={<CalendarDays className="size-4" />}
-                          label="Inicio"
-                          onChange={(selectedValue) =>
-                            updateStage(
-                              index,
-                              "fechaInicioPlanificada",
-                              selectedValue,
-                            )
-                          }
-                          placeholder="Inicio"
-                          value={stage.fechaInicioPlanificada}
-                        />
-                      </div>
-                      <div>
-                        <CalendarField
-                          icon={<CalendarDays className="size-4" />}
-                          label="Fin"
-                          onChange={(selectedValue) =>
-                            updateStage(
-                              index,
-                              "fechaFinPlanificada",
-                              selectedValue,
-                            )
-                          }
-                          placeholder="Fin"
-                          value={stage.fechaFinPlanificada}
-                        />
                       </div>
                       <div className="md:col-span-2">
                         <TextField
@@ -686,7 +656,6 @@ function createBlankStage(
   form: ProjectFormValues,
   index: number,
 ): ProjectStageFormValues {
-  const previousStage = form.etapas[form.etapas.length - 1];
   const remainingHours = Math.max(
     plannedHoursFromForm(form) - totalStageHours(form.etapas),
     0,
@@ -694,9 +663,6 @@ function createBlankStage(
 
   return {
     descripcion: "",
-    fechaFinPlanificada: form.fechaFinPlanificada,
-    fechaInicioPlanificada:
-      previousStage?.fechaFinPlanificada || form.fechaInicioPlanificada,
     horasPlanificadas: formatDecimalValue(remainingHours),
     nombre: `Etapa ${index + 1}`,
   };
@@ -707,16 +673,9 @@ function buildStagesFromTemplate(
   form: ProjectFormValues,
 ): ProjectStageFormValues[] {
   const hours = distributeHours(plannedHoursFromForm(form), stages);
-  const ranges = splitDateRange(
-    form.fechaInicioPlanificada,
-    form.fechaFinPlanificada,
-    stages.length,
-  );
 
   return stages.map((stage, index) => ({
     descripcion: stage.descripcion,
-    fechaFinPlanificada: ranges[index]?.end ?? form.fechaFinPlanificada,
-    fechaInicioPlanificada: ranges[index]?.start ?? form.fechaInicioPlanificada,
     horasPlanificadas: hours[index],
     nombre: stage.nombre,
   }));
@@ -732,16 +691,9 @@ function redistributeStages(
     weight: 1,
   }));
   const hours = distributeHours(plannedHoursFromForm(form), equalWeightStages);
-  const ranges = splitDateRange(
-    form.fechaInicioPlanificada,
-    form.fechaFinPlanificada,
-    stages.length,
-  );
 
   return stages.map((stage, index) => ({
     ...stage,
-    fechaFinPlanificada: ranges[index]?.end ?? form.fechaFinPlanificada,
-    fechaInicioPlanificada: ranges[index]?.start ?? form.fechaInicioPlanificada,
     horasPlanificadas: hours[index],
   }));
 }
@@ -774,28 +726,6 @@ function distributeHours(
   });
 }
 
-function splitDateRange(startValue: string, endValue: string, pieces: number) {
-  const startDate = parseDateInput(startValue);
-  const endDate = parseDateInput(endValue);
-
-  if (!startDate || !endDate || pieces <= 0 || startDate > endDate) {
-    return [];
-  }
-
-  const totalDays = differenceInDays(startDate, endDate) + 1;
-
-  return Array.from({ length: pieces }, (_, index) => {
-    const startOffset = Math.floor((totalDays * index) / pieces);
-    const nextStartOffset = Math.floor((totalDays * (index + 1)) / pieces);
-    const endOffset = Math.max(nextStartOffset - 1, startOffset);
-
-    return {
-      end: formatInputDate(addDays(startDate, endOffset)),
-      start: formatInputDate(addDays(startDate, startOffset)),
-    };
-  });
-}
-
 function totalStageHours(stages: ProjectStageFormValues[]) {
   return stages.reduce(
     (total, stage) => total + parseDecimalValue(stage.horasPlanificadas),
@@ -815,46 +745,4 @@ function parseDecimalValue(value: string) {
 
 function roundToTwoDecimals(value: number) {
   return Math.round(value * 100) / 100;
-}
-
-function parseDateInput(value: string) {
-  if (!value) {
-    return null;
-  }
-
-  const [year, month, day] = value.split("-").map(Number);
-
-  if (!year || !month || !day) {
-    return null;
-  }
-
-  return new Date(year, month - 1, day);
-}
-
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-
-  return nextDate;
-}
-
-function differenceInDays(startDate: Date, endDate: Date) {
-  const millisecondsPerDay = 24 * 60 * 60 * 1000;
-
-  return Math.round(
-    (stripTime(endDate).getTime() - stripTime(startDate).getTime()) /
-    millisecondsPerDay,
-  );
-}
-
-function stripTime(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function formatInputDate(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
 }

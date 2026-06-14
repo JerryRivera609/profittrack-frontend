@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "sileo/styles.css";
 
 :root {
   --background: #f1f5f9;
@@ -16,4 +17,27 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+[data-sileo-toast] {
+  --sileo-width: min(350px, calc(100vw - 2rem));
+}
+
+.profittrack-sileo-title {
+  color: #ffffff !important;
+  text-transform: none !important;
+}
+
+.profittrack-sileo-description {
+  color: rgb(255 255 255 / 0.76) !important;
+}
+
+.profittrack-sileo-badge {
+  background-color: rgb(255 255 255 / 0.12) !important;
+  color: #ffffff !important;
+}
+
+.profittrack-sileo-button {
+  background-color: rgb(255 255 255 / 0.12) !important;
+  color: #ffffff !important;
 }

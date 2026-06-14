@@ -1,35 +1,33 @@
 "use client";
 
-import { ClipboardCheck, Flag, Pencil, Play, Trash2 } from "lucide-react";
-import type { Task, TaskLifecycleAction } from "../types/task";
-import { formatTaskDate, formatTaskStatus } from "../utils/task-format";
+import { ClipboardCheck, Pencil, Trash2 } from "lucide-react";
+import type { Task } from "../types/task";
+import { formatTaskStatus } from "../utils/task-format";
 import { Button } from "../../ui/button";
 import { EmptyState } from "../../ui/empty-state";
 import { Panel } from "../../ui/panel";
 
 type TaskListProps = {
-  canManageTasks: boolean;
+  canEditTask: (task: Task) => boolean;
   isLoading: boolean;
   onDelete: (task: Task) => void;
   onEdit: (task: Task) => void;
-  onLifecycleAction: (task: Task, action: TaskLifecycleAction) => void;
   tasks: Task[];
 };
 
 export function TaskList({
-  canManageTasks,
+  canEditTask,
   isLoading,
   onDelete,
   onEdit,
-  onLifecycleAction,
   tasks,
 }: TaskListProps) {
   return (
     <Panel>
       <div>
-        <p className="text-sm font-medium text-slate-500">Backlog</p>
+        <p className="text-sm font-medium text-slate-500">Tareas realizadas</p>
         <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
-          Tareas del proyecto
+          Detalle del proyecto
         </h3>
       </div>
 
@@ -42,11 +40,7 @@ export function TaskList({
           />
         ) : tasks.length === 0 ? (
           <EmptyState
-            description={
-              canManageTasks
-                ? "Cuando registres la primera tarea para el proyecto seleccionado, aparecera aqui."
-                : "Cuando tengas tareas asignadas para el proyecto seleccionado, apareceran aqui."
-            }
+            description="Cuando existan tareas realizadas para el proyecto seleccionado, apareceran aqui."
             icon={<ClipboardCheck className="size-6" />}
             title="No hay tareas registradas"
           />
@@ -56,85 +50,65 @@ export function TaskList({
               <thead className="text-slate-500">
                 <tr className="border-b border-slate-200">
                   <th className="py-3 pr-4 font-medium">Tarea</th>
-                  <th className="py-3 pr-4 font-medium">Asignacion</th>
-                  <th className="py-3 pr-4 font-medium">Fechas</th>
+                  <th className="py-3 pr-4 font-medium">Autor y horas</th>
                   <th className="py-3 pr-4 font-medium">Estado</th>
-                  <th className="py-3 text-right font-medium">
-                    {canManageTasks ? "Acciones" : "Vista"}
-                  </th>
+                  <th className="py-3 text-right font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {tasks.map((task) => (
-                  <tr className="border-b border-slate-100 align-top" key={task.id}>
-                    <td className="py-3 pr-4">
-                      <p className="font-semibold text-slate-900">{task.nombre}</p>
-                      <p className="text-slate-500">{task.tipoTareaNombre}</p>
-                      <p className="text-slate-500">
-                        Etapa: {task.etapaProyectoNombre ?? "Sin etapa"}
-                      </p>
-                      <p className="text-xs text-slate-400">{task.descripcion}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">
-                      <p>{task.empleadoNombre}</p>
-                      <p>Horas plan: {task.horasPlanificadas}</p>
-                      <p>Horas reales: {task.horasReales}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">
-                      <p>Inicio plan: {formatTaskDate(task.fechaInicioPlanificada)}</p>
-                      <p>Fin plan: {formatTaskDate(task.fechaFinPlanificada)}</p>
-                      <p>Inicio real: {formatTaskDate(task.fechaInicioReal)}</p>
-                      <p>Fin real: {formatTaskDate(task.fechaFinReal)}</p>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <p className={task.activo ? "text-emerald-700" : "text-rose-700"}>
-                        {formatTaskStatus(task.estado || (task.activo ? "PENDIENTE" : "INACTIVA"))}
-                      </p>
-                    </td>
-                    <td className="py-3 text-right">
-                      {canManageTasks ? (
-                        <div className="flex justify-end gap-2">
-                          {!task.fechaInicioReal ? (
+                {tasks.map((task) => {
+                  const editable = canEditTask(task);
+
+                  return (
+                    <tr className="border-b border-slate-100 align-top" key={task.id}>
+                      <td className="py-3 pr-4">
+                        <p className="font-semibold text-slate-900">{task.nombre}</p>
+                        <p className="text-slate-500">{task.tipoTareaNombre}</p>
+                        <p className="text-slate-500">
+                          Etapa: {task.etapaProyectoNombre ?? "Sin etapa"}
+                        </p>
+                        <p className="text-xs text-slate-400">{task.descripcion}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-slate-600">
+                        <p>{task.empleadoNombre}</p>
+                        <p>Horas declaradas: {task.horasPlanificadas}</p>
+                        <p>Horas aprobadas: {task.horasReales}</p>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <p className={task.activo ? "text-emerald-700" : "text-rose-700"}>
+                          {formatTaskStatus(task.estado || (task.activo ? "PENDIENTE" : "INACTIVA"))}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold uppercase text-slate-400">
+                          {task.estadoAprobacion ?? "Sin revision"}
+                        </p>
+                      </td>
+                      <td className="py-3 text-right">
+                        {editable ? (
+                          <div className="flex justify-end gap-2">
                             <Button
-                              icon={<Play className="size-4" />}
-                              onClick={() => onLifecycleAction(task, "start")}
-                              variant="primary"
-                            >
-                              Iniciar
-                            </Button>
-                          ) : null}
-                          {task.fechaInicioReal && !task.fechaFinReal ? (
-                            <Button
-                              icon={<Flag className="size-4" />}
-                              onClick={() => onLifecycleAction(task, "finish")}
+                              icon={<Pencil className="size-4" />}
+                              onClick={() => onEdit(task)}
                               variant="secondary"
                             >
-                              Finalizar
+                              Editar
                             </Button>
-                          ) : null}
-                          <Button
-                            icon={<Pencil className="size-4" />}
-                            onClick={() => onEdit(task)}
-                            variant="secondary"
-                          >
-                            Editar
-                          </Button>
-                          <Button
-                            icon={<Trash2 className="size-4" />}
-                            onClick={() => onDelete(task)}
-                            variant="danger"
-                          >
-                            Eliminar
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-slate-500">
-                          Registra horas desde Horas HH.
-                        </p>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                            <Button
+                              icon={<Trash2 className="size-4" />}
+                              onClick={() => onDelete(task)}
+                              variant="danger"
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500">
+                            Revision desde Horas HH.
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

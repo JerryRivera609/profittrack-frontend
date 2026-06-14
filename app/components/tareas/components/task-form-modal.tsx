@@ -1,12 +1,10 @@
 "use client";
 
 import {
-  CalendarDays,
   ClipboardCheck,
   Clock3,
   FileText,
   ListChecks,
-  UserRound,
 } from "lucide-react";
 import type { FormEvent } from "react";
 import type {
@@ -15,7 +13,6 @@ import type {
   TaskModalState,
 } from "../types/task";
 import { Button } from "../../ui/button";
-import { CalendarField } from "../../ui/calendar-field";
 import {
   Modal,
   ModalBody,
@@ -27,7 +24,6 @@ import { SmartSelectField } from "../../ui/smart-select-field";
 import { TextField } from "../../ui/text-field";
 
 type TaskFormModalProps = {
-  employeeOptions: TaskCatalogOption[];
   form: TaskFormValues;
   isLoadingCatalogs: boolean;
   isSaving: boolean;
@@ -44,7 +40,6 @@ type TaskFormModalProps = {
 };
 
 export function TaskFormModal({
-  employeeOptions,
   form,
   isLoadingCatalogs,
   isSaving,
@@ -75,7 +70,7 @@ export function TaskFormModal({
               {isEdit ? "Editar tarea" : "Registrar tarea"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Completa la planificacion y asignacion de la tarea.
+              Completa el detalle operativo de la tarea.
             </p>
           </div>
           <ModalCloseButton onClose={onClose} />
@@ -102,7 +97,6 @@ export function TaskFormModal({
               onChange={(selectedValue) => onChange("tipoTareaId", selectedValue)}
               options={taskTypeOptions}
               placeholder={isLoadingCatalogs ? "Cargando tipos..." : "Selecciona un tipo"}
-              required
               value={form.tipoTareaId}
             />
             <SmartSelectField
@@ -117,23 +111,7 @@ export function TaskFormModal({
               onChange={(selectedValue) => onChange("etapaProyectoId", selectedValue)}
               options={stageOptions}
               placeholder={isLoadingCatalogs ? "Cargando etapas..." : "Selecciona una etapa"}
-              required
               value={form.etapaProyectoId}
-            />
-            <SmartSelectField
-              disabled={isLoadingCatalogs || employeeOptions.length === 0}
-              helperText={
-                employeeOptions.length === 0
-                  ? "Primero asigna miembros al equipo del proyecto."
-                  : "Selecciona un miembro asignado al proyecto."
-              }
-              icon={<UserRound className="size-4" />}
-              label="Responsable"
-              onChange={(selectedValue) => onChange("empleadoAsignadoId", selectedValue)}
-              options={employeeOptions}
-              placeholder={isLoadingCatalogs ? "Cargando equipo..." : "Selecciona un responsable"}
-              required
-              value={form.empleadoAsignadoId}
             />
             <TextField
               icon={<ClipboardCheck className="size-4" />}
@@ -159,22 +137,6 @@ export function TaskFormModal({
               step="0.01"
               type="number"
               value={form.horasPlanificadas}
-            />
-            <CalendarField
-              icon={<CalendarDays className="size-4" />}
-              label="Inicio planificado"
-              onChange={(selectedValue) => onChange("fechaInicioPlanificada", selectedValue)}
-              placeholder="Selecciona el inicio planificado"
-              required
-              value={form.fechaInicioPlanificada}
-            />
-            <CalendarField
-              icon={<CalendarDays className="size-4" />}
-              label="Fin planificado"
-              onChange={(selectedValue) => onChange("fechaFinPlanificada", selectedValue)}
-              placeholder="Selecciona el fin planificado"
-              required
-              value={form.fechaFinPlanificada}
             />
             {isEdit ? (
               <TextField

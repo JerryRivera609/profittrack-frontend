@@ -8,18 +8,6 @@ export function validateTaskForm(
     return "Selecciona un proyecto.";
   }
 
-  if (!form.etapaProyectoId.trim()) {
-    return "Selecciona una etapa del proyecto.";
-  }
-
-  if (!form.tipoTareaId.trim()) {
-    return "Selecciona un tipo de tarea.";
-  }
-
-  if (!form.empleadoAsignadoId.trim()) {
-    return "Selecciona un responsable.";
-  }
-
   if (!form.nombre.trim()) {
     return "Completa el nombre de la tarea.";
   }
@@ -30,14 +18,6 @@ export function validateTaskForm(
 
   if (!form.horasPlanificadas.trim()) {
     return "Completa las horas planificadas.";
-  }
-
-  if (!form.fechaInicioPlanificada) {
-    return "Selecciona la fecha de inicio planificada.";
-  }
-
-  if (!form.fechaFinPlanificada) {
-    return "Selecciona la fecha de fin planificada.";
   }
 
   if (task && !form.estado.trim()) {

@@ -5,6 +5,7 @@ import {
   Clock3,
   FolderKanban,
   LayoutDashboard,
+  LineChart,
   ListChecks,
   ReceiptText,
   Settings,
@@ -101,6 +102,13 @@ export const navigationItems: NavigationItem[] = [
     roles: ["LIDER", "EMPLEADO"],
   },
   {
+    description: "Rentabilidad, ingresos, egresos y margen empresarial.",
+    href: "/finanzas",
+    icon: LineChart,
+    label: "Finanzas",
+    roles: ["ADMIN", "OWNER"],
+  },
+  {
     description: "Planillas, pagos, descuentos y cierres mensuales.",
     href: "/planillas",
     icon: ReceiptText,
@@ -120,7 +128,7 @@ export const roleCapabilities: Record<UserRole, string[]> = {
   ADMIN: ["Empresas", "Usuarios", "Catalogos", "Proyectos", "Etapas"],
   EMPLEADO: ["Mis proyectos", "Mis etapas", "Mis tareas"],
   LIDER: ["Proyectos", "Etapas", "Tareas"],
-  OWNER: ["Mi empresa", "Equipo", "Proyectos", "Etapas", "Planillas"],
+  OWNER: ["Mi empresa", "Equipo", "Proyectos", "Etapas", "Finanzas", "Planillas"],
 };
 
 export const portalOptions = [

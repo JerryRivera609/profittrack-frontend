@@ -12,6 +12,7 @@ import type {
 } from "../../types/domain";
 import { Button } from "../ui/button";
 import { StatusMessage } from "../ui/status-message";
+import { ToastMessage } from "../ui/toast-message";
 import { AdminSummary } from "./admin-summary";
 import { CompanyForm } from "./company-form";
 import { CompanyTable } from "./company-table";
@@ -160,6 +161,11 @@ export function AdminDashboard({ apiToken }: AdminDashboardProps) {
 
   return (
     <div className="space-y-5">
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <p className="text-sm font-medium text-slate-500">Panel admin</p>

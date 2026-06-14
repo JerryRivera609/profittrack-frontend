@@ -79,11 +79,6 @@ export function validateProjectForm(
       return `Completa el nombre de la etapa ${stageNumber}.`;
     }
 
-    if (stage.fechaInicioPlanificada && stage.fechaFinPlanificada) {
-      if (stage.fechaInicioPlanificada > stage.fechaFinPlanificada) {
-        return `La etapa ${stageNumber} tiene una fecha de inicio posterior a su fecha de fin.`;
-      }
-    }
   }
 
   return "";

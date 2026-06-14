@@ -7,6 +7,7 @@ import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
 import { StatusMessage } from "../../ui/status-message";
+import { ToastMessage } from "../../ui/toast-message";
 import { useRoles } from "../hooks/use-roles";
 import { getRoleStats } from "../utils/role-format";
 import { updateRoleFormValue } from "../utils/role-form";
@@ -53,6 +54,11 @@ export function RoleManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">

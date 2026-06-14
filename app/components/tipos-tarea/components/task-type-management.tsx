@@ -7,6 +7,7 @@ import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
 import { StatusMessage } from "../../ui/status-message";
+import { ToastMessage } from "../../ui/toast-message";
 import { useTaskTypes } from "../hooks/use-task-types";
 import { getTaskTypeStats } from "../utils/task-type-format";
 import { updateTaskTypeFormValue } from "../utils/task-type-form";
@@ -41,6 +42,11 @@ export function TaskTypeManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">

@@ -23,6 +23,7 @@ import {
 } from "../../lib/auth-session";
 import { Button } from "../ui/button";
 import { TextField } from "../ui/text-field";
+import { showToast } from "../ui/toast";
 
 type RoleLoginPageProps = {
   description: string;
@@ -83,13 +84,30 @@ export function RoleLoginPage({ description, title }: RoleLoginPageProps) {
       });
 
       saveSession(session, remember);
-      setStatus(response.mensaje || "Sesion iniciada. Redirigiendo...");
+      const successMessage = response.mensaje || "Sesion iniciada. Redirigiendo...";
+      setStatus(successMessage);
+      showToast({
+        message: successMessage,
+        title: "Sesion iniciada",
+        tone: "success",
+      });
       router.replace(getRoleHome(normalizedRole));
     } catch (error) {
+      const errorMessage =
+        error instanceof ApiRequestError
+          ? error.message
+          : "No se pudo iniciar sesion. Intenta nuevamente.";
+
+      showToast({
+        message: errorMessage,
+        title: "No se pudo iniciar sesion",
+        tone: "error",
+      });
+
       if (error instanceof ApiRequestError) {
-        setStatus(error.message);
+        setStatus(errorMessage);
       } else {
-        setStatus("No se pudo iniciar sesion. Intenta nuevamente.");
+        setStatus(errorMessage);
       }
     } finally {
       setIsSubmitting(false);

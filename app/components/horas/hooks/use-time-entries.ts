@@ -2,36 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
-import type { Project } from "../../proyectos/types/project";
+import { stageService } from "../../etapas/services/stage-service";
 import { projectService } from "../../proyectos/services/project-service";
+import type { Project } from "../../proyectos/types/project";
 import { canApproveProjectHours } from "../../proyectos/utils/project-permissions";
-import type { Task } from "../../tareas/types/task";
-import { taskService } from "../../tareas/services/task-service";
+import { taskTypeService } from "../../tipos-tarea/services/task-type-service";
 import { validateTimeEntryForm } from "../schema/time-entry-schema";
 import { timeEntryService } from "../services/time-entry-service";
 import type {
-  PendingTaskWorkItem,
   TimeEntry,
   TimeEntryCatalogOption,
   TimeEntryFilters,
   TimeEntryFormValues,
   TimeEntryModalState,
   TimeEntrySummary,
-  WorkSessionState,
 } from "../types/time-entry";
 import {
   buildCreateTimeEntryPayload,
   buildSummaryFromEntries,
-  buildTimeEntryFormValuesFromTask,
   createTimeEntryFilters,
   createTimeEntryFormValues,
   createTimeEntryScope,
-  createWorkSession,
-  formatDateTimeLocal,
   updateTimeEntryFormValue,
 } from "../utils/time-entry-form";
-import { getPendingTaskItems } from "../utils/time-entry-format";
-import { filterTasksForEmployee } from "../utils/time-entry-policy";
 
 const closedModalState: TimeEntryModalState = {
   open: false,
@@ -54,21 +47,19 @@ export function useTimeEntries(session: Session) {
   );
   const [isDeciding, setIsDeciding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isFinishingSession, setIsFinishingSession] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingPendingTasks, setIsLoadingPendingTasks] = useState(false);
+  const [isLoadingStages, setIsLoadingStages] = useState(false);
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
-  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+  const [isLoadingTaskTypes, setIsLoadingTaskTypes] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [manualModalState, setManualModalState] =
     useState<TimeEntryModalState>(closedModalState);
   const [notice, setNotice] = useState("");
-  const [pendingTasks, setPendingTasks] = useState<PendingTaskWorkItem[]>([]);
   const [projectOptions, setProjectOptions] = useState<TimeEntryCatalogOption[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [stageOptions, setStageOptions] = useState<TimeEntryCatalogOption[]>([]);
   const [summary, setSummary] = useState<TimeEntrySummary | null>(null);
-  const [taskOptions, setTaskOptions] = useState<TimeEntryCatalogOption[]>([]);
-  const [workSession, setWorkSession] = useState<WorkSessionState | null>(null);
+  const [taskTypeOptions, setTaskTypeOptions] = useState<TimeEntryCatalogOption[]>([]);
 
   const selectedFilterProject = useMemo(
     () =>
@@ -102,7 +93,7 @@ export function useTimeEntries(session: Session) {
       );
 
       const nextOptions = visibleProjects.map((project) => ({
-        description: `${project.clienteNombre} · ${project.codigo}`,
+        description: `${project.clienteNombre} - ${project.codigo}`,
         label: project.nombre,
         value: project.id.toString(),
       }));
@@ -128,90 +119,71 @@ export function useTimeEntries(session: Session) {
     }
   }, [baseScope, session]);
 
-  const loadTasksForProject = useCallback(
+  const loadTaskTypes = useCallback(async () => {
+    setIsLoadingTaskTypes(true);
+
+    try {
+      const response = await taskTypeService.list(session.apiToken);
+      const scopedTaskTypes = (response ?? []).filter((taskType) =>
+        baseScope.isAdmin || !baseScope.sessionEmpresaId
+          ? taskType.activo
+          : taskType.activo && taskType.empresaId === baseScope.sessionEmpresaId,
+      );
+
+      setTaskTypeOptions(
+        scopedTaskTypes.map((taskType) => ({
+          description: taskType.descripcion,
+          label: taskType.nombre,
+          value: taskType.id.toString(),
+        })),
+      );
+    } catch {
+      setTaskTypeOptions([]);
+    } finally {
+      setIsLoadingTaskTypes(false);
+    }
+  }, [baseScope, session.apiToken]);
+
+  const loadStagesForProject = useCallback(
     async (projectId: string) => {
       if (!projectId) {
-        setTaskOptions([]);
-        setForm((current) => ({ ...current, tareaId: "" }));
+        setStageOptions([]);
+        setForm((current) => ({ ...current, etapaProyectoId: "" }));
         return;
       }
 
-      setIsLoadingTasks(true);
+      setIsLoadingStages(true);
 
       try {
-        const response = await taskService.listByProject(
+        const response = await stageService.listByProject(
           Number.parseInt(projectId, 10),
           session.apiToken,
         );
+        const nextOptions = (response ?? [])
+          .filter((stage) => stage.activo)
+          .map((stage) => ({
+            description: `${stage.horasPlanificadas.toFixed(2)} h planificadas`,
+            label: stage.nombre,
+            value: stage.id.toString(),
+          }));
 
-        const visibleTasks =
-          session.role === "EMPLEADO"
-            ? filterTasksForEmployee(response ?? [], session.empleadoId)
-            : response ?? [];
-
-        const nextOptions = visibleTasks.map((task) => ({
-          description: `${task.tipoTareaNombre} · ${task.empleadoNombre}`,
-          label: task.nombre,
-          value: task.id.toString(),
-        }));
-
-        setTaskOptions(nextOptions);
+        setStageOptions(nextOptions);
         setForm((current) => ({
           ...current,
-          tareaId:
-            current.proyectoId === projectId
-              ? current.tareaId && nextOptions.some((item) => item.value === current.tareaId)
-                ? current.tareaId
-                : nextOptions[0]?.value || ""
-              : current.tareaId,
+          etapaProyectoId: nextOptions.some(
+            (option) => option.value === current.etapaProyectoId,
+          )
+            ? current.etapaProyectoId
+            : "",
         }));
-      } catch (loadError) {
-        setError(getErrorMessage(loadError));
+      } catch {
+        setStageOptions([]);
       } finally {
-        setIsLoadingTasks(false);
+        setIsLoadingStages(false);
       }
     },
-    [session.apiToken, session.empleadoId, session.role],
+    [session.apiToken],
   );
-
-  const loadPendingTasks = useCallback(async () => {
-    if (!scope.isDeveloper) {
-      setPendingTasks([]);
-      return;
-    }
-
-    if (projects.length === 0) {
-      setPendingTasks([]);
-      return;
-    }
-
-    setIsLoadingPendingTasks(true);
-
-    try {
-      const taskResponses = await Promise.all(
-        projects.map((project) =>
-          taskService.listByProject(project.id, session.apiToken),
-        ),
-      );
-
-      const nextTasks = projects.flatMap((project, index) => {
-        const projectTasks = taskResponses[index] ?? [];
-
-        return filterTasksForEmployee(
-          projectTasks
-            .filter((task) => task.activo && task.estado !== "FINALIZADO")
-            .map((task) => mapPendingTask(project, task)),
-          session.empleadoId,
-        );
-      });
-
-      setPendingTasks(getPendingTaskItems(nextTasks));
-    } catch (loadError) {
-      setError(getErrorMessage(loadError));
-    } finally {
-      setIsLoadingPendingTasks(false);
-    }
-  }, [projects, scope.isDeveloper, session.apiToken, session.empleadoId]);
 
   const loadEntries = useCallback(async () => {
     setError("");
@@ -229,19 +201,7 @@ export function useTimeEntries(session: Session) {
           ? []
           : await timeEntryService.listMine(session.apiToken);
 
-      const filteredEntries = (response ?? []).filter((entry) => {
-        if (filters.fechaInicio && entry.fechaTrabajo < filters.fechaInicio) {
-          return false;
-        }
-
-        if (filters.fechaFin && entry.fechaTrabajo > filters.fechaFin) {
-          return false;
-        }
-
-        return true;
-      });
-
-      setEntries(filteredEntries);
+      setEntries(response ?? []);
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -249,8 +209,6 @@ export function useTimeEntries(session: Session) {
     }
   }, [
     canApproveAnyProject,
-    filters.fechaFin,
-    filters.fechaInicio,
     filters.proyectoId,
     scope.canApprove,
     session.apiToken,
@@ -263,8 +221,6 @@ export function useTimeEntries(session: Session) {
       if (scope.canApprove) {
         const response = await timeEntryService.summary(
           {
-            fechaFin: filters.fechaFin || undefined,
-            fechaInicio: filters.fechaInicio || undefined,
             proyectoId: filters.proyectoId
               ? Number.parseInt(filters.proyectoId, 10)
               : undefined,
@@ -290,8 +246,6 @@ export function useTimeEntries(session: Session) {
   }, [
     canApproveAnyProject,
     entries,
-    filters.fechaFin,
-    filters.fechaInicio,
     filters.proyectoId,
     scope.canApprove,
     session.apiToken,
@@ -300,22 +254,19 @@ export function useTimeEntries(session: Session) {
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       void loadProjectOptions();
+      void loadTaskTypes();
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [loadProjectOptions]);
+  }, [loadProjectOptions, loadTaskTypes]);
 
   useEffect(() => {
-    if (!form.proyectoId) {
-      return;
-    }
-
     const timeoutId = window.setTimeout(() => {
-      void loadTasksForProject(form.proyectoId);
+      void loadStagesForProject(form.proyectoId);
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [form.proyectoId, loadTasksForProject]);
+  }, [form.proyectoId, loadStagesForProject]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -333,27 +284,11 @@ export function useTimeEntries(session: Session) {
     return () => window.clearTimeout(timeoutId);
   }, [loadSummary]);
 
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void loadPendingTasks();
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [loadPendingTasks]);
-
-  function openCreateModal(projectId = filters.proyectoId, taskId = "") {
+  function openCreateModal(projectId = filters.proyectoId) {
     setError("");
     setNotice("");
-    setForm(
-      taskId
-        ? buildTimeEntryFormValuesFromTask(Number.parseInt(projectId, 10), Number.parseInt(taskId, 10))
-        : createTimeEntryFormValues(projectId, ""),
-    );
+    setForm(createTimeEntryFormValues(projectId));
     setManualModalState({ open: true });
-  }
-
-  function openManualEntryForTask(task: PendingTaskWorkItem) {
-    openCreateModal(task.proyectoId.toString(), task.id.toString());
   }
 
   function closeFormModal() {
@@ -362,7 +297,7 @@ export function useTimeEntries(session: Session) {
     }
 
     setManualModalState(closedModalState);
-    setForm(createTimeEntryFormValues(filters.proyectoId, ""));
+    setForm(createTimeEntryFormValues(filters.proyectoId));
   }
 
   function openDeleteModal(entry: TimeEntry) {
@@ -393,64 +328,6 @@ export function useTimeEntries(session: Session) {
     setDecisionTarget(null);
   }
 
-  function openWorkSessionForTask(task: PendingTaskWorkItem) {
-    setError("");
-    setNotice("");
-    setWorkSession(createWorkSession(task));
-  }
-
-  function closeWorkSession() {
-    if (isFinishingSession) {
-      return;
-    }
-
-    setWorkSession(null);
-  }
-
-  function pauseWorkSession() {
-    setWorkSession((current) => {
-      if (!current || current.status !== "running" || !current.lastResumedAt) {
-        return current;
-      }
-
-      const now = new Date();
-
-      return {
-        ...current,
-        accumulatedWorkMs:
-          current.accumulatedWorkMs +
-          (now.getTime() - new Date(current.lastResumedAt).getTime()),
-        lastResumedAt: null,
-        pausedAt: now.toISOString(),
-        status: "paused",
-      };
-    });
-  }
-
-  function resumeWorkSession() {
-    setWorkSession((current) => {
-      if (!current || current.status !== "paused" || !current.pausedAt) {
-        return current;
-      }
-
-      const now = new Date();
-
-      return {
-        ...current,
-        accumulatedPauseMs:
-          current.accumulatedPauseMs +
-          (now.getTime() - new Date(current.pausedAt).getTime()),
-        lastResumedAt: now.toISOString(),
-        pausedAt: null,
-        status: "running",
-      };
-    });
-  }
-
-  function updateWorkSessionDescription(value: string) {
-    setWorkSession((current) => (current ? { ...current, descripcion: value } : current));
-  }
-
   function updateForm<Key extends keyof TimeEntryFormValues>(
     key: Key,
     value: TimeEntryFormValues[Key],
@@ -476,76 +353,15 @@ export function useTimeEntries(session: Session) {
         buildCreateTimeEntryPayload(form),
         session.apiToken,
       );
-      setNotice("Registro de horas creado.");
+      setNotice("Tarea realizada registrada y enviada a revision.");
       closeFormModal();
-      await Promise.all([loadEntries(), loadSummary(), loadPendingTasks()]);
+      await Promise.all([loadEntries(), loadSummary()]);
       return true;
     } catch (submitError) {
       setError(getErrorMessage(submitError));
       return false;
     } finally {
       setIsSaving(false);
-    }
-  }
-
-  async function finalizeWorkSession() {
-    if (!workSession?.task) {
-      return false;
-    }
-
-    setError("");
-    setNotice("");
-    setIsFinishingSession(true);
-
-    try {
-      const finishDate = new Date();
-      const startedAtDate = new Date(workSession.startedAt);
-      let accumulatedWorkMs = workSession.accumulatedWorkMs;
-      let accumulatedPauseMs = workSession.accumulatedPauseMs;
-
-      if (workSession.status === "running" && workSession.lastResumedAt) {
-        accumulatedWorkMs +=
-          finishDate.getTime() - new Date(workSession.lastResumedAt).getTime();
-      }
-
-      if (workSession.status === "paused" && workSession.pausedAt) {
-        accumulatedPauseMs +=
-          finishDate.getTime() - new Date(workSession.pausedAt).getTime();
-      }
-
-      const formValues: TimeEntryFormValues = {
-        descripcion:
-          workSession.descripcion.trim() ||
-          `Trabajo registrado sobre ${workSession.task.nombre}.`,
-        fechaTrabajo: workSession.fechaTrabajo,
-        horaIngreso: formatDateTimeLocal(startedAtDate),
-        horaSalida: formatDateTimeLocal(finishDate),
-        horasTrabajadas: (accumulatedWorkMs / 3_600_000).toFixed(2),
-        minutosDescanso: Math.max(0, Math.round(accumulatedPauseMs / 60_000)).toString(),
-        proyectoId: workSession.task.proyectoId.toString(),
-        tareaId: workSession.task.id.toString(),
-      };
-
-      const validationError = validateTimeEntryForm(formValues);
-
-      if (validationError) {
-        setError(validationError);
-        return false;
-      }
-
-      await timeEntryService.create(
-        buildCreateTimeEntryPayload(formValues),
-        session.apiToken,
-      );
-      setNotice("Horas registradas desde la sesión activa.");
-      setWorkSession(null);
-      await Promise.all([loadEntries(), loadSummary(), loadPendingTasks()]);
-      return true;
-    } catch (submitError) {
-      setError(getErrorMessage(submitError));
-      return false;
-    } finally {
-      setIsFinishingSession(false);
     }
   }
 
@@ -585,7 +401,7 @@ export function useTimeEntries(session: Session) {
         setNotice("Horas aprobadas.");
       } else {
         await timeEntryService.reject(decisionTarget.entry.id, session.apiToken);
-        setNotice("Horas rechazadas.");
+        setNotice("Horas desaprobadas.");
       }
 
       setDecisionTarget(null);
@@ -602,23 +418,20 @@ export function useTimeEntries(session: Session) {
     closeDecisionModal,
     closeDeleteModal,
     closeFormModal,
-    closeWorkSession,
     confirmDecision,
     confirmDelete,
     decisionTarget,
     deleteTarget,
     entries,
     error,
-    finalizeWorkSession,
     filters,
     form,
     isDeciding,
     isDeleting,
-    isFinishingSession,
     isLoading,
-    isLoadingPendingTasks,
+    isLoadingStages,
     isLoadingSummary,
-    isLoadingTasks,
+    isLoadingTaskTypes,
     isSaving,
     loadEntries,
     manualModalState,
@@ -626,38 +439,14 @@ export function useTimeEntries(session: Session) {
     openCreateModal,
     openDecisionModal,
     openDeleteModal,
-    openManualEntryForTask,
-    openWorkSessionForTask,
-    pauseWorkSession,
-    pendingTasks,
     projectOptions,
-    resumeWorkSession,
     scope,
     setFilters,
+    stageOptions,
     submitTimeEntry,
     summary,
-    taskOptions,
+    taskTypeOptions,
     updateForm,
-    updateWorkSessionDescription,
-    workSession,
-  };
-}
-
-function mapPendingTask(project: Project, task: Task): PendingTaskWorkItem {
-  return {
-    clienteNombre: project.clienteNombre,
-    descripcion: task.descripcion,
-    empleadoAsignadoId: task.empleadoAsignadoId,
-    estado: task.estado,
-    fechaFinPlanificada: task.fechaFinPlanificada,
-    fechaInicioPlanificada: task.fechaInicioPlanificada,
-    horasPlanificadas: task.horasPlanificadas,
-    horasReales: task.horasReales,
-    id: task.id,
-    nombre: task.nombre,
-    proyectoCodigo: project.codigo,
-    proyectoId: project.id,
-    proyectoNombre: project.nombre,
   };
 }
 

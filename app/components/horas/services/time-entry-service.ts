@@ -1,14 +1,13 @@
 import { apiRequest } from "../../../lib/api";
 import type {
   CreateTimeEntryPayload,
+  RealizedTaskResponse,
   TimeEntry,
   TimeEntrySummary,
 } from "../types/time-entry";
 
 type SummaryFilters = {
   empleadoId?: number;
-  fechaFin?: string;
-  fechaInicio?: string;
   proyectoId?: number;
 };
 
@@ -20,12 +19,6 @@ function buildSummaryPath(filters: SummaryFilters) {
   }
   if (filters.empleadoId) {
     searchParams.set("empleadoId", filters.empleadoId.toString());
-  }
-  if (filters.fechaInicio) {
-    searchParams.set("fechaInicio", filters.fechaInicio);
-  }
-  if (filters.fechaFin) {
-    searchParams.set("fechaFin", filters.fechaFin);
   }
 
   const query = searchParams.toString();
@@ -42,7 +35,7 @@ export const timeEntryService = {
       token,
     }),
   create: (payload: CreateTimeEntryPayload, token?: string) =>
-    apiRequest<TimeEntry>("/api/registro-horas", {
+    apiRequest<RealizedTaskResponse>("/api/tareas/realizadas", {
       body: payload,
       credentials: "include",
       method: "POST",
@@ -59,7 +52,7 @@ export const timeEntryService = {
       token,
     }),
   reject: (id: number, token?: string) =>
-    apiRequest<TimeEntry>(`/api/registro-horas/${id}/rechazar`, {
+    apiRequest<TimeEntry>(`/api/registro-horas/${id}/desaprobar`, {
       credentials: "include",
       method: "PATCH",
       token,
