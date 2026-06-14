@@ -14,6 +14,7 @@ import {
 import { SmartSelectField } from "../../ui/smart-select-field";
 import { StatusMessage } from "../../ui/status-message";
 import { TextField } from "../../ui/text-field";
+import { ToastMessage } from "../../ui/toast-message";
 import type {
   Project,
   ProjectCatalogOption,
@@ -63,6 +64,11 @@ export function ProjectEmployeesModal({
 
   return (
     <Modal onClose={onClose} open={Boolean(project)} size="xl">
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <form onSubmit={handleSubmit}>
         <ModalHeader>
           <div>

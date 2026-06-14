@@ -9,10 +9,6 @@ export type StageFormValues = {
   descripcion: string;
   orden: string;
   horasPlanificadas: string;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
-  fechaInicioReal: string;
-  fechaFinReal: string;
   estado: string;
 };
 
@@ -22,8 +18,6 @@ export type CreateStagePayload = {
   descripcion: string;
   orden: number;
   horasPlanificadas: number;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
 };
 
 export type UpdateStagePayload = {
@@ -31,10 +25,6 @@ export type UpdateStagePayload = {
   descripcion: string;
   orden: number;
   horasPlanificadas: number;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
-  fechaInicioReal?: string;
-  fechaFinReal?: string;
   estado: string;
 };
 

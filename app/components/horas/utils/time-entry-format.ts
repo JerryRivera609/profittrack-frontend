@@ -1,8 +1,19 @@
 import type { PendingTaskWorkItem, TimeEntry } from "../types/time-entry";
-import { formatHours } from "./time-entry-form";
+import {
+  formatHours,
+  getTimeEntryApprovalStatus,
+  getTimeEntryHours,
+} from "./time-entry-form";
 
-export function formatTimeEntryDate(value: string) {
+export function formatTimeEntryDate(value?: string | null) {
   if (!value) {
+    return "-";
+  }
+
+  const normalizedValue = value.includes("T") ? value : `${value}T00:00:00`;
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
     return "-";
   }
 
@@ -10,10 +21,10 @@ export function formatTimeEntryDate(value: string) {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(`${value}T00:00:00`));
+  }).format(date);
 }
 
-export function formatTimeEntryDateTime(value: string) {
+export function formatTimeEntryDateTime(value?: string | null) {
   if (!value) {
     return "-";
   }
@@ -29,23 +40,46 @@ export function formatTimeEntryDateTime(value: string) {
     hour: "2-digit",
     minute: "2-digit",
     month: "short",
+    year: "numeric",
   }).format(date);
 }
 
 export function formatTimeEntryStatus(entry: TimeEntry) {
-  if (entry.aprobado) {
-    return "Aprobado";
+  switch (getTimeEntryApprovalStatus(entry)) {
+    case "APROBADO":
+      return "Aprobado";
+    case "DESAPROBADO":
+      return "Desaprobado";
+    default:
+      return "Pendiente";
   }
-
-  return entry.activo ? "Pendiente" : "Inactivo";
 }
 
 export function formatTimeEntryStatusTone(entry: TimeEntry) {
-  if (entry.aprobado) {
-    return "text-emerald-700";
+  switch (getTimeEntryApprovalStatus(entry)) {
+    case "APROBADO":
+      return "text-emerald-700";
+    case "DESAPROBADO":
+      return "text-rose-700";
+    default:
+      return "text-amber-700";
   }
+}
 
-  return entry.activo ? "text-amber-700" : "text-slate-500";
+export function isTimeEntryApproved(entry: TimeEntry) {
+  return getTimeEntryApprovalStatus(entry) === "APROBADO";
+}
+
+export function isTimeEntryPending(entry: TimeEntry) {
+  return getTimeEntryApprovalStatus(entry) === "PENDIENTE";
+}
+
+export function getTimeEntryTaskName(entry: TimeEntry) {
+  return entry.tareaNombre ?? entry.nombre ?? `Tarea #${entry.tareaId ?? entry.id}`;
+}
+
+export function getTimeEntryDecisionDate(entry: TimeEntry) {
+  return entry.aprobadoEn ?? entry.desaprobadoEn ?? entry.rechazadoEn ?? null;
 }
 
 export function getTopProjectLabel(entries: TimeEntry[]) {
@@ -55,27 +89,20 @@ export function getTopProjectLabel(entries: TimeEntry[]) {
 
   const byProject = new Map<string, number>();
 
-  entries.forEach((entry) => {
-    byProject.set(
-      entry.proyectoNombre,
-      (byProject.get(entry.proyectoNombre) ?? 0) + entry.horasTrabajadas,
-    );
-  });
+  entries
+    .filter((entry) => isTimeEntryApproved(entry))
+    .forEach((entry) => {
+      byProject.set(
+        entry.proyectoNombre,
+        (byProject.get(entry.proyectoNombre) ?? 0) + getTimeEntryHours(entry),
+      );
+    });
 
   const topProject = Array.from(byProject.entries()).sort((a, b) => b[1] - a[1])[0];
 
-  return topProject ? `${topProject[0]} · ${formatHours(topProject[1])}` : "Sin datos";
+  return topProject ? `${topProject[0]} - ${formatHours(topProject[1])}` : "Sin datos";
 }
 
 export function getPendingTaskItems(tasks: PendingTaskWorkItem[]) {
-  return [...tasks].sort((left, right) => {
-    const leftDate = left.fechaFinPlanificada ?? "9999-12-31";
-    const rightDate = right.fechaFinPlanificada ?? "9999-12-31";
-
-    if (leftDate !== rightDate) {
-      return leftDate.localeCompare(rightDate);
-    }
-
-    return left.nombre.localeCompare(right.nombre);
-  });
+  return [...tasks].sort((left, right) => left.nombre.localeCompare(right.nombre));
 }

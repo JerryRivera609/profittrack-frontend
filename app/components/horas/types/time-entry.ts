@@ -1,32 +1,49 @@
 import type { Session } from "../../../types/domain";
 
+export type ApprovalStatus = "PENDIENTE" | "APROBADO" | "DESAPROBADO";
+
 export type TimeEntry = {
   id: number;
   empleadoId: number;
   empleadoNombre: string;
   proyectoId: number;
   proyectoNombre: string;
-  tareaId: number;
-  tareaNombre: string;
-  fechaTrabajo: string;
-  horaIngreso: string;
-  horaSalida: string;
-  minutosDescanso: number;
-  horasTrabajadas: number;
-  descripcion: string;
-  aprobado: boolean;
-  activo: boolean;
+  tareaId?: number | null;
+  tareaNombre?: string | null;
+  nombre?: string | null;
+  descripcion?: string | null;
+  horasTrabajadas?: number;
+  horasDedicadas?: number;
+  estadoAprobacion?: ApprovalStatus | string | null;
+  aprobado?: boolean;
+  activo?: boolean;
+  creadoEn?: string | null;
+  actualizadoEn?: string | null;
+  aprobadoEn?: string | null;
+  rechazadoEn?: string | null;
+  desaprobadoEn?: string | null;
 };
 
 export type CreateTimeEntryPayload = {
   proyectoId: number;
-  tareaId: number;
-  fechaTrabajo: string;
-  horaIngreso: string;
-  horaSalida: string;
-  minutosDescanso: number;
-  horasTrabajadas: number;
+  etapaProyectoId?: number;
+  tipoTareaId?: number;
+  nombre: string;
   descripcion: string;
+  horasDedicadas: number;
+};
+
+export type RealizedTaskResponse = {
+  tareaId: number;
+  registroHorasId: number;
+  proyectoId: number;
+  empleadoId: number;
+  empleadoNombre: string;
+  nombre: string;
+  descripcion?: string | null;
+  horasDedicadas: number;
+  estadoAprobacion: ApprovalStatus | string;
+  creadoEn?: string | null;
 };
 
 export type TimeEntrySummaryItemByProject = {
@@ -58,18 +75,14 @@ export type TimeEntryCatalogOption = {
 
 export type TimeEntryFormValues = {
   proyectoId: string;
-  tareaId: string;
-  fechaTrabajo: string;
-  horaIngreso: string;
-  horaSalida: string;
-  minutosDescanso: string;
-  horasTrabajadas: string;
+  etapaProyectoId: string;
+  tipoTareaId: string;
+  nombre: string;
   descripcion: string;
+  horasDedicadas: string;
 };
 
 export type TimeEntryFilters = {
-  fechaFin: string;
-  fechaInicio: string;
   proyectoId: string;
 };
 
@@ -89,14 +102,11 @@ export type PendingTaskWorkItem = {
   estado: string;
   horasPlanificadas: number;
   horasReales: number;
-  fechaInicioPlanificada?: string | null;
-  fechaFinPlanificada?: string | null;
 };
 
 export type WorkSessionState = {
   open: boolean;
   task: PendingTaskWorkItem | null;
-  fechaTrabajo: string;
   startedAt: string;
   lastResumedAt: string | null;
   pausedAt: string | null;

@@ -1,12 +1,13 @@
 "use client";
 
-import { Building2, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { usePlatformAuth } from "../../platform/platform-auth-context";
 import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
 import { StatusMessage } from "../../ui/status-message";
+import { ToastMessage } from "../../ui/toast-message";
 import { useClients } from "../hooks/use-clients";
 import { getClientStats } from "../utils/client-format";
 import { updateClientFormValue } from "../utils/client-form";
@@ -41,6 +42,11 @@ export function ClientManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">

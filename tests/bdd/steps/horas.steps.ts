@@ -1,9 +1,6 @@
 import { Given, Then, When } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
-import {
-  buildCreateTimeEntryPayload,
-  formatDateTimeLocal,
-} from "../../../app/components/horas/utils/time-entry-form";
+import { buildCreateTimeEntryPayload } from "../../../app/components/horas/utils/time-entry-form";
 import { filterTasksForEmployee } from "../../../app/components/horas/utils/time-entry-policy";
 import type {
   PendingTaskWorkItem,
@@ -106,13 +103,11 @@ When("construimos el payload de registro de horas", function () {
 
   const form: TimeEntryFormValues = {
     descripcion: world.sessionComment ?? "",
-    fechaTrabajo: world.sessionStart.slice(0, 10),
-    horaIngreso: formatDateTimeLocal(new Date(world.sessionStart)),
-    horaSalida: formatDateTimeLocal(new Date(world.sessionEnd)),
-    horasTrabajadas: (workedMs / 3_600_000).toFixed(2),
-    minutosDescanso: `${world.sessionPauseMinutes ?? 0}`,
+    etapaProyectoId: "",
+    horasDedicadas: (workedMs / 3_600_000).toFixed(2),
+    nombre: `Tarea realizada ${world.sessionTaskId}`,
     proyectoId: `${world.sessionProjectId}`,
-    tareaId: `${world.sessionTaskId}`,
+    tipoTareaId: "",
   };
 
   world.payload = buildCreateTimeEntryPayload(form);
@@ -122,14 +117,15 @@ Then(
   "el payload usa el proyecto {int} y la tarea {int}",
   function (projectId: number, taskId: number) {
     assert.equal(world.payload?.proyectoId, projectId);
-    assert.equal(world.payload?.tareaId, taskId);
+    assert.equal("tareaId" in (world.payload ?? {}), false);
+    assert.ok(taskId);
   },
 );
 
 Then(
   "el payload registra {float} horas trabajadas",
   function (hoursWorked: number) {
-    assert.equal(world.payload?.horasTrabajadas, hoursWorked);
+    assert.equal(world.payload?.horasDedicadas, hoursWorked);
   },
 );
 

@@ -8,6 +8,7 @@ import { Button } from "../../ui/button";
 import { SmartSelectField } from "../../ui/smart-select-field";
 import { StatusMessage } from "../../ui/status-message";
 import { TextField } from "../../ui/text-field";
+import { ToastMessage } from "../../ui/toast-message";
 import { usePayrolls } from "../hooks/use-payrolls";
 import { type PayrollDetailFormValues } from "../types/payroll";
 import {
@@ -60,6 +61,11 @@ export function PayrollManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <Button

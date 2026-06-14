@@ -1,5 +1,6 @@
 import type { Session } from "../../../types/domain";
 import type {
+  ApprovalStatus,
   CreateTimeEntryPayload,
   PendingTaskWorkItem,
   TimeEntry,
@@ -10,19 +11,13 @@ import type {
   WorkSessionState,
 } from "../types/time-entry";
 
-const now = new Date();
-const defaultDate = formatInputDate(now);
-const defaultDateTime = formatDateTimeLocal(now);
-
 const emptyForm: TimeEntryFormValues = {
   descripcion: "",
-  fechaTrabajo: defaultDate,
-  horaIngreso: defaultDateTime,
-  horaSalida: defaultDateTime,
-  horasTrabajadas: "0.00",
-  minutosDescanso: "0",
+  etapaProyectoId: "",
+  horasDedicadas: "",
+  nombre: "",
   proyectoId: "",
-  tareaId: "",
+  tipoTareaId: "",
 };
 
 export function createTimeEntryScope(session: Session): TimeEntryScope {
@@ -36,21 +31,15 @@ export function createTimeEntryScope(session: Session): TimeEntryScope {
   };
 }
 
-export function createTimeEntryFormValues(
-  projectId = "",
-  taskId = "",
-): TimeEntryFormValues {
+export function createTimeEntryFormValues(projectId = ""): TimeEntryFormValues {
   return {
     ...emptyForm,
     proyectoId: projectId,
-    tareaId: taskId,
   };
 }
 
 export function createTimeEntryFilters(projectId = ""): TimeEntryFilters {
   return {
-    fechaFin: "",
-    fechaInicio: "",
     proyectoId: projectId,
   };
 }
@@ -62,7 +51,6 @@ export function createWorkSession(task: PendingTaskWorkItem): WorkSessionState {
     accumulatedPauseMs: 0,
     accumulatedWorkMs: 0,
     descripcion: "",
-    fechaTrabajo: formatInputDate(startedAt),
     lastResumedAt: startedAt.toISOString(),
     open: true,
     pausedAt: null,
@@ -77,105 +65,26 @@ export function updateTimeEntryFormValue(
   key: keyof TimeEntryFormValues,
   value: string,
 ): TimeEntryFormValues {
-  const nextForm = {
+  return {
     ...form,
     [key]: value,
   };
-
-  if (key === "horaIngreso" || key === "horaSalida" || key === "minutosDescanso") {
-    return {
-      ...nextForm,
-      horasTrabajadas: computeWorkedHours(
-        nextForm.horaIngreso,
-        nextForm.horaSalida,
-        nextForm.minutosDescanso,
-      ),
-    };
-  }
-
-  return nextForm;
 }
 
 export function buildCreateTimeEntryPayload(
   form: TimeEntryFormValues,
 ): CreateTimeEntryPayload {
+  const etapaProyectoId = parseOptionalId(form.etapaProyectoId);
+  const tipoTareaId = parseOptionalId(form.tipoTareaId);
+
   return {
+    ...(etapaProyectoId ? { etapaProyectoId } : {}),
+    ...(tipoTareaId ? { tipoTareaId } : {}),
     descripcion: form.descripcion.trim(),
-    fechaTrabajo: form.fechaTrabajo,
-    horaIngreso: toIsoDateTime(form.horaIngreso),
-    horaSalida: toIsoDateTime(form.horaSalida),
-    horasTrabajadas: Number.parseFloat(form.horasTrabajadas),
-    minutosDescanso: Number.parseInt(form.minutosDescanso || "0", 10),
+    horasDedicadas: Number.parseFloat(form.horasDedicadas),
+    nombre: form.nombre.trim(),
     proyectoId: Number.parseInt(form.proyectoId, 10),
-    tareaId: Number.parseInt(form.tareaId, 10),
   };
-}
-
-export function buildTimeEntryFormValuesFromTask(
-  projectId: number,
-  taskId: number,
-): TimeEntryFormValues {
-  return {
-    ...createTimeEntryFormValues(projectId.toString(), taskId.toString()),
-    horasTrabajadas: "0.00",
-  };
-}
-
-export function applyStartNow(
-  form: TimeEntryFormValues,
-): TimeEntryFormValues {
-  const current = new Date();
-  const nextDate = formatInputDate(current);
-  const nextDateTime = formatDateTimeLocal(current);
-
-  return {
-    ...form,
-    fechaTrabajo: nextDate,
-    horaIngreso: nextDateTime,
-    horaSalida: nextDateTime,
-    horasTrabajadas: "0.00",
-  };
-}
-
-export function applyFinishNow(
-  form: TimeEntryFormValues,
-): TimeEntryFormValues {
-  const end = formatDateTimeLocal(new Date());
-
-  return {
-    ...form,
-    horaSalida: end,
-    horasTrabajadas: computeWorkedHours(
-      form.horaIngreso,
-      end,
-      form.minutosDescanso,
-    ),
-  };
-}
-
-export function buildStatsFromSummary(summary: TimeEntrySummary | null) {
-  if (!summary) {
-    return [
-      { label: "Horas registradas", value: "0.00" },
-      { label: "Horas aprobadas", value: "0.00" },
-      { label: "Horas pendientes", value: "0.00" },
-    ];
-  }
-
-  return [
-    {
-      label: "Horas registradas",
-      value: formatHours(summary.totalHorasRegistradas),
-    },
-    {
-      label: "Horas aprobadas",
-      value: formatHours(summary.totalHorasAprobadas),
-    },
-    {
-      label: "Horas pendientes",
-      value: formatHours(summary.totalHorasPendientes),
-    },
-  ];
 }
 
 export function buildSummaryFromEntries(entries: TimeEntry[]): TimeEntrySummary {
@@ -185,29 +94,39 @@ export function buildSummaryFromEntries(entries: TimeEntry[]): TimeEntrySummary 
   let totalHorasRegistradas = 0;
   let totalHorasAprobadas = 0;
   let totalHorasPendientes = 0;
+  let totalHorasRechazadas = 0;
 
   entries.forEach((entry) => {
-    totalHorasRegistradas += entry.horasTrabajadas;
+    const hours = getTimeEntryHours(entry);
+    const status = getTimeEntryApprovalStatus(entry);
 
-    if (entry.aprobado) {
-      totalHorasAprobadas += entry.horasTrabajadas;
-    } else {
-      totalHorasPendientes += entry.horasTrabajadas;
+    totalHorasRegistradas += hours;
+
+    if (status === "APROBADO") {
+      totalHorasAprobadas += hours;
+
+      const projectBucket = hoursByProject.get(entry.proyectoId) ?? {
+        horas: 0,
+        nombre: entry.proyectoNombre,
+      };
+      projectBucket.horas += hours;
+      hoursByProject.set(entry.proyectoId, projectBucket);
+
+      const employeeBucket = hoursByEmployee.get(entry.empleadoId) ?? {
+        horas: 0,
+        nombre: entry.empleadoNombre,
+      };
+      employeeBucket.horas += hours;
+      hoursByEmployee.set(entry.empleadoId, employeeBucket);
+      return;
     }
 
-    const projectBucket = hoursByProject.get(entry.proyectoId) ?? {
-      horas: 0,
-      nombre: entry.proyectoNombre,
-    };
-    projectBucket.horas += entry.horasTrabajadas;
-    hoursByProject.set(entry.proyectoId, projectBucket);
+    if (status === "DESAPROBADO") {
+      totalHorasRechazadas += hours;
+      return;
+    }
 
-    const employeeBucket = hoursByEmployee.get(entry.empleadoId) ?? {
-      horas: 0,
-      nombre: entry.empleadoNombre,
-    };
-    employeeBucket.horas += entry.horasTrabajadas;
-    hoursByEmployee.set(entry.empleadoId, employeeBucket);
+    totalHorasPendientes += hours;
   });
 
   return {
@@ -227,9 +146,33 @@ export function buildSummaryFromEntries(entries: TimeEntry[]): TimeEntrySummary 
     ),
     totalHorasAprobadas,
     totalHorasPendientes,
-    totalHorasRechazadas: 0,
+    totalHorasRechazadas,
     totalHorasRegistradas,
   };
+}
+
+export function getTimeEntryApprovalStatus(entry: TimeEntry): ApprovalStatus {
+  const explicitStatus = entry.estadoAprobacion?.toString().trim().toUpperCase();
+
+  if (explicitStatus === "APROBADO" || explicitStatus === "DESAPROBADO") {
+    return explicitStatus;
+  }
+
+  if (explicitStatus === "PENDIENTE") {
+    return "PENDIENTE";
+  }
+
+  if (entry.aprobado) {
+    return "APROBADO";
+  }
+
+  return "PENDIENTE";
+}
+
+export function getTimeEntryHours(entry: TimeEntry) {
+  const hours = entry.horasTrabajadas ?? entry.horasDedicadas ?? 0;
+
+  return Number.isFinite(hours) ? hours : 0;
 }
 
 export function formatHours(value: number) {
@@ -248,24 +191,6 @@ export function formatDurationFromMs(value: number) {
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export function formatInputDate(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-export function formatDateTimeLocal(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  const hours = `${date.getHours()}`.padStart(2, "0");
-  const minutes = `${date.getMinutes()}`.padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
 export function formatTimeOnly(date: Date) {
   return new Intl.DateTimeFormat("es-PE", {
     hour: "2-digit",
@@ -274,42 +199,12 @@ export function formatTimeOnly(date: Date) {
   }).format(date);
 }
 
-export function fromApiDateTime(value?: string | null) {
-  if (!value) {
-    return "";
+function parseOptionalId(value: string) {
+  if (!value.trim()) {
+    return undefined;
   }
 
-  const date = new Date(value);
+  const parsedValue = Number.parseInt(value, 10);
 
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return formatDateTimeLocal(date);
-}
-
-export function computeWorkedHours(
-  startValue: string,
-  endValue: string,
-  breakMinutesValue: string,
-) {
-  const start = Date.parse(startValue);
-  const end = Date.parse(endValue);
-  const breakMinutes = Number.parseInt(breakMinutesValue || "0", 10);
-
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
-    return "0.00";
-  }
-
-  const effectiveMs = end - start - Math.max(breakMinutes, 0) * 60_000;
-
-  if (effectiveMs <= 0) {
-    return "0.00";
-  }
-
-  return (effectiveMs / 3_600_000).toFixed(2);
-}
-
-function toIsoDateTime(value: string) {
-  return new Date(value).toISOString();
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : undefined;
 }

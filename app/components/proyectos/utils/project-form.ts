@@ -177,11 +177,8 @@ function buildCreateProjectStagePayload(
     descripcion:
       stage.descripcion.trim() ||
       `${stageName} de ${form.nombre.trim() || form.codigo.trim() || "proyecto"}`,
-    orden: index + 1,
     horasPlanificadas: parseDecimalInput(stage.horasPlanificadas),
-    fechaInicioPlanificada:
-      stage.fechaInicioPlanificada || form.fechaInicioPlanificada,
-    fechaFinPlanificada: stage.fechaFinPlanificada || form.fechaFinPlanificada,
+    orden: index + 1,
   };
 }
 

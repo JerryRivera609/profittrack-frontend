@@ -34,12 +34,6 @@ export function CalendarField({
   const [viewDate, setViewDate] = useState<Date>(() => selectedDate ?? new Date());
 
   useEffect(() => {
-    if (selectedDate) {
-      setViewDate(selectedDate);
-    }
-  }, [selectedDate]);
-
-  useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
@@ -63,6 +57,14 @@ export function CalendarField({
 
   const monthMatrix = useMemo(() => buildMonthMatrix(viewDate), [viewDate]);
 
+  function toggleCalendar() {
+    if (!open && selectedDate) {
+      setViewDate(selectedDate);
+    }
+
+    setOpen((current) => !current);
+  }
+
   return (
     <div className="relative" ref={rootRef}>
       <label className="block text-sm font-medium text-slate-700">
@@ -78,7 +80,7 @@ export function CalendarField({
             open && !disabled ? "border-teal-500 ring-4 ring-teal-100" : "",
           )}
           disabled={disabled}
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggleCalendar}
           type="button"
         >
           <span className="mt-0.5 shrink-0 rounded-xl bg-slate-100 p-2 text-slate-500">

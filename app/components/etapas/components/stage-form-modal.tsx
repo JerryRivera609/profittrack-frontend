@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CalendarDays,
   Clock3,
   FileText,
   FolderKanban,
@@ -11,7 +10,6 @@ import {
 import type { FormEvent } from "react";
 import type { StageFormValues, StageModalState } from "../types/stage";
 import { Button } from "../../ui/button";
-import { CalendarField } from "../../ui/calendar-field";
 import {
   Modal,
   ModalBody,
@@ -100,21 +98,7 @@ export function StageFormModal({
               type="number"
               value={form.horasPlanificadas}
             />
-            <CalendarField
-              icon={<CalendarDays className="size-4" />}
-              label="Inicio planificado"
-              onChange={(value) => onChange("fechaInicioPlanificada", value)}
-              required
-              value={form.fechaInicioPlanificada}
-            />
-            <CalendarField
-              icon={<CalendarDays className="size-4" />}
-              label="Fin planificado"
-              onChange={(value) => onChange("fechaFinPlanificada", value)}
-              required
-              value={form.fechaFinPlanificada}
-            />
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 xl:col-span-4">
               <TextField
                 icon={<FileText className="size-4" />}
                 label="Descripcion"
@@ -124,29 +108,15 @@ export function StageFormModal({
               />
             </div>
             {isEdit ? (
-              <>
-                <CalendarField
-                  icon={<CalendarDays className="size-4" />}
-                  label="Inicio real"
-                  onChange={(value) => onChange("fechaInicioReal", value)}
-                  value={form.fechaInicioReal}
+              <div className="md:col-span-2">
+                <TextField
+                  icon={<FolderKanban className="size-4" />}
+                  label="Estado"
+                  onChange={(event) => onChange("estado", event.target.value)}
+                  required
+                  value={form.estado}
                 />
-                <CalendarField
-                  icon={<CalendarDays className="size-4" />}
-                  label="Fin real"
-                  onChange={(value) => onChange("fechaFinReal", value)}
-                  value={form.fechaFinReal}
-                />
-                <div className="md:col-span-2">
-                  <TextField
-                    icon={<FolderKanban className="size-4" />}
-                    label="Estado"
-                    onChange={(event) => onChange("estado", event.target.value)}
-                    required
-                    value={form.estado}
-                  />
-                </div>
-              </>
+              </div>
             ) : null}
           </div>
         </ModalBody>

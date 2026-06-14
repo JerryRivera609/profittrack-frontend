@@ -1,7 +1,9 @@
 import type { Task, TaskStats } from "../types/task";
 
-export function formatTaskDate(value?: string | null) {
-  return value?.slice(0, 10) ?? "-";
+export function isTaskApproved(task: Task) {
+  const approvalStatus = task.estadoAprobacion?.toString().trim().toUpperCase();
+
+  return approvalStatus === "APROBADO" || task.horasReales > 0;
 }
 
 export function getTaskStats(tasks: Task[]): TaskStats[] {
@@ -15,8 +17,10 @@ export function getTaskStats(tasks: Task[]): TaskStats[] {
       value: tasks.filter((task) => task.activo).length.toString(),
     },
     {
-      label: "En curso",
-      value: tasks.filter((task) => task.estado === "EN_CURSO").length.toString(),
+      label: "Pendientes revision",
+      value: tasks
+        .filter((task) => task.estadoAprobacion === "PENDIENTE")
+        .length.toString(),
     },
   ];
 }

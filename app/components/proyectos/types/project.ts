@@ -50,10 +50,6 @@ export type ProjectStage = {
   horasPlanificadas: number;
   horasTareasPlanificadas: number;
   horasReales: number;
-  fechaInicioPlanificada?: string | null;
-  fechaFinPlanificada?: string | null;
-  fechaInicioReal?: string | null;
-  fechaFinReal?: string | null;
   estado: string;
   activo: boolean;
 };
@@ -81,8 +77,6 @@ export type CreateProjectStagePayload = {
   descripcion: string;
   orden: number;
   horasPlanificadas: number;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
 };
 
 export type UpdateProjectPayload = {
@@ -125,8 +119,6 @@ export type ProjectStageFormValues = {
   nombre: string;
   descripcion: string;
   horasPlanificadas: string;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
 };
 
 export type ProjectModalMode = "create" | "edit";

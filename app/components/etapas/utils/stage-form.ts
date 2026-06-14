@@ -3,10 +3,6 @@ import type { Stage, StageFormValues, StageProject } from "../types/stage";
 const emptyForm: StageFormValues = {
   descripcion: "",
   estado: "PLANIFICADO",
-  fechaFinPlanificada: "",
-  fechaFinReal: "",
-  fechaInicioPlanificada: "",
-  fechaInicioReal: "",
   horasPlanificadas: "0",
   nombre: "",
   orden: "1",
@@ -25,8 +21,6 @@ export function createStageFormValues(
 
     return {
       ...emptyForm,
-      fechaFinPlanificada: normalizeDateInput(project?.fechaFinPlanificada),
-      fechaInicioPlanificada: normalizeDateInput(project?.fechaInicioPlanificada),
       horasPlanificadas: formatDecimalValue(remainingHours),
       orden: `${stages.length + 1}`,
     };
@@ -35,10 +29,6 @@ export function createStageFormValues(
   return {
     descripcion: stage.descripcion ?? "",
     estado: stage.estado ?? "PLANIFICADO",
-    fechaFinPlanificada: normalizeDateInput(stage.fechaFinPlanificada),
-    fechaFinReal: normalizeDateInput(stage.fechaFinReal),
-    fechaInicioPlanificada: normalizeDateInput(stage.fechaInicioPlanificada),
-    fechaInicioReal: normalizeDateInput(stage.fechaInicioReal),
     horasPlanificadas: stage.horasPlanificadas.toString(),
     nombre: stage.nombre,
     orden: stage.orden.toString(),
@@ -62,8 +52,6 @@ export function buildCreateStagePayload(
 ) {
   return {
     descripcion: normalizeStageDescription(form),
-    fechaFinPlanificada: form.fechaFinPlanificada,
-    fechaInicioPlanificada: form.fechaInicioPlanificada,
     horasPlanificadas: parseDecimalInput(form.horasPlanificadas),
     nombre: form.nombre.trim(),
     orden: parseIntegerInput(form.orden),
@@ -75,10 +63,6 @@ export function buildUpdateStagePayload(form: StageFormValues) {
   return {
     descripcion: normalizeStageDescription(form),
     estado: normalizeStageStatus(form.estado),
-    fechaFinPlanificada: form.fechaFinPlanificada,
-    fechaFinReal: form.fechaFinReal || undefined,
-    fechaInicioPlanificada: form.fechaInicioPlanificada,
-    fechaInicioReal: form.fechaInicioReal || undefined,
     horasPlanificadas: parseDecimalInput(form.horasPlanificadas),
     nombre: form.nombre.trim(),
     orden: parseIntegerInput(form.orden),
@@ -100,18 +84,6 @@ export function validateStageForm(form: StageFormValues, stage: Stage | null) {
 
   if (parseDecimalInput(form.horasPlanificadas) < 0) {
     return "Las horas planificadas no pueden ser negativas.";
-  }
-
-  if (!form.fechaInicioPlanificada) {
-    return "Selecciona la fecha de inicio planificada.";
-  }
-
-  if (!form.fechaFinPlanificada) {
-    return "Selecciona la fecha de fin planificada.";
-  }
-
-  if (form.fechaInicioPlanificada > form.fechaFinPlanificada) {
-    return "La fecha de inicio no puede ser posterior al fin planificado.";
   }
 
   if (stage && !form.estado.trim()) {
@@ -171,26 +143,8 @@ export function formatDecimalValue(value: number) {
   return Number.isFinite(value) ? value.toFixed(2) : "0.00";
 }
 
-export function formatStageDate(value?: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-
-  return new Intl.DateTimeFormat("es-PE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
 export function formatStageStatus(value: string) {
   return value.replaceAll("_", " ").toLowerCase();
-}
-
-function normalizeDateInput(value?: string | null) {
-  return value?.slice(0, 10) ?? "";
 }
 
 function normalizeStageDescription(form: StageFormValues) {

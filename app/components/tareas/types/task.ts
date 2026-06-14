@@ -13,52 +13,36 @@ export type Task = {
   descripcion: string;
   horasPlanificadas: number;
   horasReales: number;
-  fechaInicioPlanificada?: string | null;
-  fechaFinPlanificada?: string | null;
-  fechaInicioReal?: string | null;
-  fechaFinReal?: string | null;
+  estadoAprobacion?: string | null;
   estado: string;
   activo: boolean;
 };
 
 export type CreateTaskPayload = {
   proyectoId: number;
-  etapaProyectoId: number;
-  tipoTareaId: number;
-  empleadoAsignadoId: number;
+  etapaProyectoId?: number;
+  tipoTareaId?: number;
   nombre: string;
   descripcion: string;
   horasPlanificadas: number;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
 };
 
 export type UpdateTaskPayload = {
   etapaProyectoId?: number;
-  tipoTareaId: number;
-  empleadoAsignadoId: number;
+  tipoTareaId?: number;
   nombre: string;
   descripcion: string;
   horasPlanificadas: number;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
-  fechaInicioReal?: string;
-  fechaFinReal?: string;
   estado: string;
 };
-
-export type TaskLifecycleAction = "start" | "finish";
 
 export type TaskFormValues = {
   proyectoId: string;
   etapaProyectoId: string;
   tipoTareaId: string;
-  empleadoAsignadoId: string;
   nombre: string;
   descripcion: string;
   horasPlanificadas: string;
-  fechaInicioPlanificada: string;
-  fechaFinPlanificada: string;
   estado: string;
 };
 

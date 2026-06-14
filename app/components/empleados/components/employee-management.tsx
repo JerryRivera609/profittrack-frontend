@@ -8,6 +8,7 @@ import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
 import { StatusMessage } from "../../ui/status-message";
+import { ToastMessage } from "../../ui/toast-message";
 import { useEmployees } from "../hooks/use-employees";
 import { getEmployeeStats, getEmployeeFullName } from "../utils/employee-format";
 import { updateEmployeeFormValue } from "../utils/employee-form";
@@ -69,6 +70,11 @@ export function EmployeeManagement() {
 
   return (
     <>
+      <ToastMessage
+        message={error || notice}
+        tone={error ? "error" : "success"}
+      />
+
       <ModulePage
         actions={
           <div className="flex flex-wrap gap-3">
