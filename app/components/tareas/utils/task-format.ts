@@ -6,6 +6,14 @@ export function isTaskApproved(task: Task) {
   return approvalStatus === "APROBADO" || task.horasReales > 0;
 }
 
+export function getTaskCreatorId(task: Task) {
+  return task.empleadoCreadorId ?? task.empleadoId ?? task.empleadoAsignadoId ?? null;
+}
+
+export function getTaskCreatorName(task: Task) {
+  return task.empleadoCreadorNombre ?? task.empleadoNombre;
+}
+
 export function getTaskStats(tasks: Task[]): TaskStats[] {
   return [
     {

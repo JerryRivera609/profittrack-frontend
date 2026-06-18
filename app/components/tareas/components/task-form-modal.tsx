@@ -64,13 +64,13 @@ export function TaskFormModal({
         <ModalHeader>
           <div>
             <p className="text-sm font-medium text-slate-500">
-              {isEdit ? "Actualizacion de tarea" : "Alta de tarea"}
+              {isEdit ? "Correccion de tarea realizada" : "Alta de tarea"}
             </p>
             <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
               {isEdit ? "Editar tarea" : "Registrar tarea"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Completa el detalle operativo de la tarea.
+              Ajusta el detalle declarado antes de que quede aprobado.
             </p>
           </div>
           <ModalCloseButton onClose={onClose} />
@@ -125,12 +125,11 @@ export function TaskFormModal({
               icon={<FileText className="size-4" />}
               label="Descripcion"
               onChange={(event) => onChange("descripcion", event.target.value)}
-              required
               value={form.descripcion}
             />
             <TextField
               icon={<Clock3 className="size-4" />}
-              label="Horas planificadas"
+              label="Horas dedicadas"
               min="0"
               onChange={(event) => onChange("horasPlanificadas", event.target.value)}
               required

@@ -2,7 +2,7 @@
 
 import { ClipboardCheck, Pencil, Trash2 } from "lucide-react";
 import type { Task } from "../types/task";
-import { formatTaskStatus } from "../utils/task-format";
+import { formatTaskStatus, getTaskCreatorName } from "../utils/task-format";
 import { Button } from "../../ui/button";
 import { EmptyState } from "../../ui/empty-state";
 import { Panel } from "../../ui/panel";
@@ -50,7 +50,7 @@ export function TaskList({
               <thead className="text-slate-500">
                 <tr className="border-b border-slate-200">
                   <th className="py-3 pr-4 font-medium">Tarea</th>
-                  <th className="py-3 pr-4 font-medium">Autor y horas</th>
+                  <th className="py-3 pr-4 font-medium">Creador y horas</th>
                   <th className="py-3 pr-4 font-medium">Estado</th>
                   <th className="py-3 text-right font-medium">Acciones</th>
                 </tr>
@@ -58,20 +58,23 @@ export function TaskList({
               <tbody>
                 {tasks.map((task) => {
                   const editable = canEditTask(task);
+                  const creatorName = getTaskCreatorName(task);
 
                   return (
                     <tr className="border-b border-slate-100 align-top" key={task.id}>
                       <td className="py-3 pr-4">
                         <p className="font-semibold text-slate-900">{task.nombre}</p>
-                        <p className="text-slate-500">{task.tipoTareaNombre}</p>
+                        <p className="text-slate-500">
+                          {task.tipoTareaNombre ?? "Sin tipo"}
+                        </p>
                         <p className="text-slate-500">
                           Etapa: {task.etapaProyectoNombre ?? "Sin etapa"}
                         </p>
                         <p className="text-xs text-slate-400">{task.descripcion}</p>
                       </td>
                       <td className="py-3 pr-4 text-slate-600">
-                        <p>{task.empleadoNombre}</p>
-                        <p>Horas declaradas: {task.horasPlanificadas}</p>
+                        <p>{creatorName}</p>
+                        <p>Horas dedicadas: {task.horasPlanificadas}</p>
                         <p>Horas aprobadas: {task.horasReales}</p>
                       </td>
                       <td className="py-3 pr-4">

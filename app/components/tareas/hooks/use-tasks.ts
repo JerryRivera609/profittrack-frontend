@@ -21,7 +21,7 @@ import {
   createTaskFormValues,
   createTaskScope,
 } from "../utils/task-form";
-import { isTaskApproved } from "../utils/task-format";
+import { getTaskCreatorId, isTaskApproved } from "../utils/task-format";
 
 const closedModalState: TaskModalState = {
   mode: "create",
@@ -64,7 +64,7 @@ export function useTasks(session: Session) {
   const canEditTask = useCallback(
     (task: Task) =>
       typeof session.empleadoId === "number" &&
-      task.empleadoAsignadoId === session.empleadoId &&
+      getTaskCreatorId(task) === session.empleadoId &&
       !isTaskApproved(task),
     [session.empleadoId],
   );
@@ -160,7 +160,9 @@ export function useTasks(session: Session) {
         !canManageTasks &&
         session.role === "EMPLEADO" &&
         typeof session.empleadoId === "number"
-          ? (response ?? []).filter((task) => task.empleadoAsignadoId === session.empleadoId)
+          ? (response ?? []).filter(
+              (task) => getTaskCreatorId(task) === session.empleadoId,
+            )
           : response ?? [];
 
       setTasks(nextTasks);

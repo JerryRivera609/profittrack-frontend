@@ -1,4 +1,4 @@
-import type { PendingTaskWorkItem, TimeEntry } from "../types/time-entry";
+import type { TimeEntry } from "../types/time-entry";
 import {
   formatHours,
   getTimeEntryApprovalStatus,
@@ -101,8 +101,4 @@ export function getTopProjectLabel(entries: TimeEntry[]) {
   const topProject = Array.from(byProject.entries()).sort((a, b) => b[1] - a[1])[0];
 
   return topProject ? `${topProject[0]} - ${formatHours(topProject[1])}` : "Sin datos";
-}
-
-export function getPendingTaskItems(tasks: PendingTaskWorkItem[]) {
-  return [...tasks].sort((left, right) => left.nombre.localeCompare(right.nombre));
 }

@@ -48,7 +48,9 @@ export function OwnerProjectDashboard() {
     setSelectedProjectId,
   } = useOwnerProjectDashboard(session);
 
+  const statistics = dashboard?.estadisticas;
   const rentability = dashboard?.rentabilidad;
+  const trafficLight = statistics?.semaforo ?? dashboard?.semaforo;
   const stages = dashboard?.proyecto.etapas ?? [];
   const latestSnapshots = useMemo(
     () =>
@@ -116,16 +118,16 @@ export function OwnerProjectDashboard() {
       eyebrow="Dashboard owner"
       stats={[
         {
-          label: "Ingreso real",
-          value: formatMoney(rentability?.ingresoReal),
+          label: "Costo total",
+          value: formatMoney(statistics?.costoTotalProyecto),
         },
         {
-          label: "Costo real",
-          value: formatMoney(rentability?.costoReal),
+          label: "Costo laboral",
+          value: formatMoney(statistics?.costoLaboral),
         },
         {
-          label: "Margen real",
-          value: formatMoney(rentability?.margenReal),
+          label: "Horas pendientes",
+          value: formatNumber(statistics?.horasPendientes, "h"),
         },
       ]}
       title="Estado del proyecto"
@@ -170,49 +172,91 @@ export function OwnerProjectDashboard() {
               </div>
               <span
                 className={`inline-flex w-fit items-center rounded-lg border px-3 py-1 text-xs font-semibold ${getTrafficClasses(
-                  dashboard?.semaforo,
+                  trafficLight,
                 )}`}
               >
-                {getTrafficLabel(dashboard?.semaforo)}
+                {getTrafficLabel(trafficLight)}
               </span>
             </div>
 
             <div className="mt-5 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
               <MetricLine
-                icon={<BarChart3 className="size-4" />}
-                label="Margen"
-                value={formatPercent(rentability?.porcentajeMargen)}
-              />
-              <MetricLine
                 icon={<CheckCircle2 className="size-4" />}
-                label="CPI"
-                value={formatNumber(rentability?.cpi)}
+                label="Estado"
+                value={statistics?.estado ?? dashboard?.proyecto.estado ?? "-"}
               />
               <MetricLine
                 icon={<Clock3 className="size-4" />}
-                label="SPI"
-                value={formatNumber(rentability?.spi)}
-              />
-              <MetricLine
-                icon={<Clock3 className="size-4" />}
-                label="Horas aprobadas"
-                value={formatNumber(
-                  dashboard?.resumenHoras.totalHorasAprobadas,
+                label="Horas invertidas"
+                value={`${formatNumber(statistics?.horasInvertidas, "h")} / ${formatNumber(
+                  statistics?.horasPlanificadas,
                   "h",
-                )}
+                )}`}
+              />
+              <MetricLine
+                icon={<BarChart3 className="size-4" />}
+                label="Avance de horas"
+                value={formatPercent(statistics?.avanceHorasPorcentaje)}
+              />
+              <MetricLine
+                icon={<Clock3 className="size-4" />}
+                label="Horas pendientes"
+                value={formatNumber(statistics?.horasPendientes, "h")}
               />
               <MetricLine
                 icon={<AlertTriangle className="size-4" />}
-                label="Horas pendientes"
-                value={formatNumber(
-                  dashboard?.resumenHoras.totalHorasPendientes,
-                  "h",
-                )}
+                label="Horas excedidas"
+                value={formatNumber(statistics?.horasExcedidas, "h")}
               />
               <MetricLine
                 icon={<UsersRound className="size-4" />}
                 label="Equipo"
                 value={formatNumber(dashboard?.equipo.length)}
+              />
+              <MetricLine
+                icon={<BarChart3 className="size-4" />}
+                label="Costo total"
+                value={formatMoney(statistics?.costoTotalProyecto)}
+              />
+              <MetricLine
+                icon={<CheckCircle2 className="size-4" />}
+                label="Costo laboral"
+                value={formatMoney(statistics?.costoLaboral)}
+              />
+              <MetricLine
+                icon={<Clock3 className="size-4" />}
+                label="Costo operativo"
+                value={formatMoney(statistics?.costoOperativo)}
+              />
+              <MetricLine
+                icon={<AlertTriangle className="size-4" />}
+                label="Presupuesto restante"
+                value={formatMoney(statistics?.saldoPresupuesto)}
+              />
+              <MetricLine
+                icon={<BarChart3 className="size-4" />}
+                label="Presupuesto consumido"
+                value={formatPercent(statistics?.porcentajePresupuestoConsumido)}
+              />
+              <MetricLine
+                icon={<Clock3 className="size-4" />}
+                label="Costo promedio hora"
+                value={formatMoney(statistics?.costoPromedioHoraProyecto)}
+              />
+              <MetricLine
+                icon={<BarChart3 className="size-4" />}
+                label="Ingreso real"
+                value={formatMoney(rentability?.ingresoReal)}
+              />
+              <MetricLine
+                icon={<CheckCircle2 className="size-4" />}
+                label="Margen real"
+                value={formatMoney(rentability?.margenReal)}
+              />
+              <MetricLine
+                icon={<BarChart3 className="size-4" />}
+                label="Margen"
+                value={formatPercent(rentability?.porcentajeMargen)}
               />
             </div>
           </Panel>
@@ -254,12 +298,23 @@ export function OwnerProjectDashboard() {
             />
             <DataTable
               emptyMessage="No hay costos laborales aprobados."
-              headers={["Empleado", "Horas", "Registros", "Costo"]}
+              headers={[
+                "Empleado",
+                "Horas",
+                "Costo/h prom.",
+                "Ultimo costo/h",
+                "Costo",
+                "% laboral",
+                "Registros",
+              ]}
               rows={(dashboard?.costosPorEmpleado ?? []).map((cost) => [
                 cost.empleadoNombre,
                 formatNumber(cost.totalHoras, "h"),
-                formatNumber(cost.registros),
+                formatMoney(cost.costoHoraPromedio),
+                formatMoney(cost.ultimoCostoHoraAplicado),
                 formatMoney(cost.totalCosto),
+                formatPercent(cost.porcentajeCostoLaboral),
+                formatNumber(cost.registros),
               ])}
             />
           </Panel>

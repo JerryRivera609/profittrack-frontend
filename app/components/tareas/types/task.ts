@@ -6,7 +6,10 @@ export type Task = {
   etapaProyectoId?: number | null;
   etapaProyectoNombre?: string | null;
   tipoTareaId?: number | null;
-  tipoTareaNombre: string;
+  tipoTareaNombre?: string | null;
+  empleadoCreadorId?: number | null;
+  empleadoCreadorNombre?: string | null;
+  empleadoId?: number | null;
   empleadoAsignadoId?: number | null;
   empleadoNombre: string;
   nombre: string;

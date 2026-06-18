@@ -12,12 +12,14 @@ export function validateTaskForm(
     return "Completa el nombre de la tarea.";
   }
 
-  if (!form.descripcion.trim()) {
-    return "Completa la descripcion.";
+  if (!form.horasPlanificadas.trim()) {
+    return "Completa las horas dedicadas.";
   }
 
-  if (!form.horasPlanificadas.trim()) {
-    return "Completa las horas planificadas.";
+  const horas = Number.parseFloat(form.horasPlanificadas || "0");
+
+  if (!Number.isFinite(horas) || horas <= 0) {
+    return "Las horas dedicadas deben ser mayores a cero.";
   }
 
   if (task && !form.estado.trim()) {

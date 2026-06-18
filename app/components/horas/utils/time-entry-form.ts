@@ -2,13 +2,11 @@ import type { Session } from "../../../types/domain";
 import type {
   ApprovalStatus,
   CreateTimeEntryPayload,
-  PendingTaskWorkItem,
   TimeEntry,
   TimeEntryFilters,
   TimeEntryFormValues,
   TimeEntryScope,
   TimeEntrySummary,
-  WorkSessionState,
 } from "../types/time-entry";
 
 const emptyForm: TimeEntryFormValues = {
@@ -41,22 +39,6 @@ export function createTimeEntryFormValues(projectId = ""): TimeEntryFormValues {
 export function createTimeEntryFilters(projectId = ""): TimeEntryFilters {
   return {
     proyectoId: projectId,
-  };
-}
-
-export function createWorkSession(task: PendingTaskWorkItem): WorkSessionState {
-  const startedAt = new Date();
-
-  return {
-    accumulatedPauseMs: 0,
-    accumulatedWorkMs: 0,
-    descripcion: "",
-    lastResumedAt: startedAt.toISOString(),
-    open: true,
-    pausedAt: null,
-    startedAt: startedAt.toISOString(),
-    status: "running",
-    task,
   };
 }
 
@@ -177,26 +159,6 @@ export function getTimeEntryHours(entry: TimeEntry) {
 
 export function formatHours(value: number) {
   return `${value.toFixed(2)} h`;
-}
-
-export function formatDurationFromMs(value: number) {
-  const safeValue = Math.max(0, value);
-  const totalSeconds = Math.floor(safeValue / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${hours.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-}
-
-export function formatTimeOnly(date: Date) {
-  return new Intl.DateTimeFormat("es-PE", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
 }
 
 function parseOptionalId(value: string) {
