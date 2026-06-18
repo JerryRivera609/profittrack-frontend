@@ -1,4 +1,4 @@
-    "use client";
+"use client";
 
 import {
   Bell,
@@ -11,9 +11,6 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
-import { projectService } from "../proyectos/services/project-service";
-import { taskService } from "../tareas/services/task-service";
-import { ToastMessage } from "../ui/toast-message";
 import {
   navigationItems,
   roleLabels,
@@ -41,16 +38,7 @@ export function PlatformShell({ children }: PlatformShellProps) {
   const router = useRouter();
   const [hasHydrated, setHasHydrated] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [assignedTaskCount, setAssignedTaskCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const visibleAssignedTaskCount =
-    typeof session?.empleadoId === "number" ? assignedTaskCount : 0;
-  const assignedTaskNotice =
-    visibleAssignedTaskCount > 0
-      ? `Tienes ${visibleAssignedTaskCount} ${
-          visibleAssignedTaskCount === 1 ? "tarea asignada" : "tareas asignadas"
-        }.`
-      : "";
 
   const allowedItems = useMemo(
     () =>
@@ -164,54 +152,6 @@ export function PlatformShell({ children }: PlatformShellProps) {
     };
   }, [forceLogout, hasHydrated, session]);
 
-  useEffect(() => {
-    if (!hasHydrated || typeof session?.empleadoId !== "number") {
-      return;
-    }
-
-    const activeEmployeeId = session.empleadoId;
-    const activeToken = session.apiToken;
-    let cancelled = false;
-
-    async function loadAssignedTaskCount() {
-      try {
-        const projects = await projectService.listMine(activeToken);
-        const taskResponses = await Promise.all(
-          (projects ?? []).map((project) =>
-            taskService
-              .listByProject(project.id, activeToken)
-              .catch(() => []),
-          ),
-        );
-        const assignedTaskIds = new Set<number>();
-
-        taskResponses.flat().forEach((task) => {
-          if (
-            task.activo &&
-            task.estado !== "FINALIZADO" &&
-            task.empleadoAsignadoId === activeEmployeeId
-          ) {
-            assignedTaskIds.add(task.id);
-          }
-        });
-
-        if (!cancelled) {
-          setAssignedTaskCount(assignedTaskIds.size);
-        }
-      } catch {
-        if (!cancelled) {
-          setAssignedTaskCount(0);
-        }
-      }
-    }
-
-    void loadAssignedTaskCount();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hasHydrated, session?.apiToken, session?.empleadoId]);
-
   function handleLogout() {
     void authApi.logout().catch(() => undefined).finally(() => {
       forceLogout(session);
@@ -237,7 +177,6 @@ export function PlatformShell({ children }: PlatformShellProps) {
 
   return (
     <PlatformAuthProvider value={{ logout: handleLogout, session }}>
-      <ToastMessage message={assignedTaskNotice} />
       <main className="min-h-screen bg-slate-100 text-slate-950">
         <div className="flex min-h-screen">
           <Sidebar
@@ -250,8 +189,6 @@ export function PlatformShell({ children }: PlatformShellProps) {
 
           <section className="flex min-w-0 flex-1 flex-col">
             <Header
-              assignedTaskCount={visibleAssignedTaskCount}
-              assignedTaskNotice={assignedTaskNotice}
               onLogout={handleLogout}
               onMenu={() => setMobileOpen(true)}
               session={session}
@@ -274,14 +211,10 @@ export function PlatformShell({ children }: PlatformShellProps) {
 }
 
 function Header({
-  assignedTaskCount,
-  assignedTaskNotice,
   onLogout,
   onMenu,
   session,
 }: {
-  assignedTaskCount: number;
-  assignedTaskNotice: string;
   onLogout: () => void;
   onMenu: () => void;
   session: Session;
@@ -318,17 +251,12 @@ function Header({
 
         <div className="flex items-center gap-2">
           <button
-            aria-label={assignedTaskNotice || "Notificaciones"}
+            aria-label="Notificaciones"
             className="relative rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition hover:text-slate-950"
-            title={assignedTaskNotice || "Sin tareas asignadas pendientes"}
+            title="Sin notificaciones pendientes"
             type="button"
           >
             <Bell className="size-5" />
-            {assignedTaskCount > 0 ? (
-              <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
-                {assignedTaskCount > 99 ? "99+" : assignedTaskCount}
-              </span>
-            ) : null}
           </button>
           <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm sm:flex">
             <span className="max-w-32 truncate font-semibold">

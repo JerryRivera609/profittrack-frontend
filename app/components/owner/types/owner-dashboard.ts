@@ -6,6 +6,26 @@ import type {
 
 export type OwnerTrafficLight = "AMARILLO" | "ROJO" | "VERDE";
 
+export type OwnerProjectStatistics = {
+  proyectoId: number;
+  proyectoNombre: string;
+  estado: string;
+  semaforo: OwnerTrafficLight;
+  horasPlanificadas: number;
+  horasInvertidas: number;
+  horasPendientes: number;
+  horasDesaprobadas: number;
+  avanceHorasPorcentaje: number;
+  horasExcedidas: number;
+  costoLaboral: number;
+  costoOperativo: number;
+  costoTotalProyecto: number;
+  costoPlanificado: number;
+  saldoPresupuesto: number;
+  porcentajePresupuestoConsumido: number;
+  costoPromedioHoraProyecto: number;
+};
+
 export type OwnerProfitability = {
   proyectoId: number;
   proyectoNombre: string;
@@ -20,9 +40,15 @@ export type OwnerProfitability = {
   margenPlanificado: number;
   porcentajeMargen: number;
   horasReales: number;
+  horasInvertidas?: number;
   horasPlanificadas: number;
-  cpi: number;
-  spi: number;
+  avanceHorasPorcentaje?: number;
+  horasExcedidas?: number;
+  porcentajePresupuestoConsumido?: number;
+  saldoPresupuesto?: number;
+  costoPromedioHora?: number;
+  cpi?: number;
+  spi?: number;
   esRentable: boolean;
 };
 
@@ -44,7 +70,10 @@ export type OwnerEmployeeCost = {
   empleadoId: number;
   empleadoNombre: string;
   totalHoras: number;
+  costoHoraPromedio: number;
+  ultimoCostoHoraAplicado: number;
   totalCosto: number;
+  porcentajeCostoLaboral: number;
   registros: number;
 };
 
@@ -105,6 +134,7 @@ export type OwnerMetricSnapshot = {
 export type OwnerProjectDashboard = {
   proyecto: Project & { etapas?: ProjectStage[] };
   rentabilidad: OwnerProfitability;
+  estadisticas: OwnerProjectStatistics;
   resumenHoras: OwnerHoursSummary;
   costosPorEmpleado: OwnerEmployeeCost[];
   equipo: ProjectEmployeeAssignment[];

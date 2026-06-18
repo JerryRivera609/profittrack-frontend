@@ -65,6 +65,10 @@ export function OwnerCompanyFinance() {
       }),
     [projects],
   );
+  const budgetConsumption =
+    dashboard && dashboard.totalCostoPlanificado > 0
+      ? (dashboard.totalCostoReal / dashboard.totalCostoPlanificado) * 100
+      : 0;
   const recentIncomes = useMemo(
     () =>
       incomes
@@ -160,13 +164,23 @@ export function OwnerCompanyFinance() {
               value={formatMoney(dashboard?.totalIngresoPlanificado)}
             />
             <MetricLine
+              icon={<ReceiptText className="size-4" />}
+              label="Ingreso real"
+              value={formatMoney(dashboard?.totalIngresoReal)}
+            />
+            <MetricLine
               icon={<Activity className="size-4" />}
               label="Costo planificado"
               value={formatMoney(dashboard?.totalCostoPlanificado)}
             />
             <MetricLine
+              icon={<Activity className="size-4" />}
+              label="Costo real"
+              value={formatMoney(dashboard?.totalCostoReal)}
+            />
+            <MetricLine
               icon={<LineChart className="size-4" />}
-              label="Margen"
+              label="Margen real"
               value={formatPercent(dashboard?.porcentajeMargen)}
             />
             <MetricLine
@@ -186,8 +200,16 @@ export function OwnerCompanyFinance() {
             />
             <MetricLine
               icon={<LineChart className="size-4" />}
-              label="CPI"
-              value={formatNumber(dashboard?.cpi)}
+              label="Horas invertidas"
+              value={`${formatNumber(dashboard?.horasReales, "h")} / ${formatNumber(
+                dashboard?.horasPlanificadas,
+                "h",
+              )}`}
+            />
+            <MetricLine
+              icon={<Activity className="size-4" />}
+              label="Presupuesto consumido"
+              value={formatPercent(budgetConsumption)}
             />
             <MetricLine
               icon={<AlertTriangle className="size-4" />}
@@ -222,11 +244,12 @@ export function OwnerCompanyFinance() {
               "Semaforo",
               "Estado",
               "Rentabilidad",
-              "Ingreso",
-              "Costo",
+              "Ingreso real",
+              "Ingreso plan",
+              "Costo real",
+              "Costo plan",
               "Margen",
-              "CPI",
-              "SPI",
+              "Horas",
             ]}
             rows={portfolio.map((project) => [
               project.proyectoNombre,
@@ -234,10 +257,14 @@ export function OwnerCompanyFinance() {
               project.estado,
               getProjectState(project),
               formatMoney(project.ingresoReal),
+              formatMoney(project.ingresoPlanificado),
               formatMoney(project.costoReal),
+              formatMoney(project.costoPlanificado),
               formatMoney(project.margenReal),
-              formatNumber(project.cpi),
-              formatNumber(project.spi),
+              `${formatNumber(project.horasReales, "h")} / ${formatNumber(
+                project.horasPlanificadas,
+                "h",
+              )}`,
             ])}
           />
         </Panel>

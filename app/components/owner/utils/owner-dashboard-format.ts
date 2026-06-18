@@ -117,16 +117,25 @@ export function mergeEmployeeCosts(dashboards: OwnerProjectDashboard[]) {
   dashboards.forEach((dashboard) => {
     dashboard.costosPorEmpleado?.forEach((cost) => {
       const current = costsByEmployee.get(cost.empleadoId) ?? {
+        costoHoraPromedio: 0,
         empleadoId: cost.empleadoId,
         empleadoNombre: cost.empleadoNombre,
+        porcentajeCostoLaboral: 0,
         registros: 0,
         totalCosto: 0,
         totalHoras: 0,
+        ultimoCostoHoraAplicado: 0,
       };
 
       current.registros += safeNumber(cost.registros);
       current.totalCosto += safeNumber(cost.totalCosto);
       current.totalHoras += safeNumber(cost.totalHoras);
+      current.ultimoCostoHoraAplicado =
+        safeNumber(cost.ultimoCostoHoraAplicado) ||
+        current.ultimoCostoHoraAplicado;
+      current.costoHoraPromedio = current.totalHoras
+        ? current.totalCosto / current.totalHoras
+        : 0;
       costsByEmployee.set(cost.empleadoId, current);
     });
   });
