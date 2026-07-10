@@ -2,33 +2,61 @@ import { Building2, UserRound, UsersRound } from "lucide-react";
 import type { Duenio, Empresa } from "../../types/domain";
 
 type AdminSummaryProps = {
-  duenios: Duenio[];
-  empresas: Empresa[];
+  totalEmpresas: number;
+  empresasActivas: number;
+  empresasInactivas: number;
+  totalProyectos: number;
+  proyectosEnCurso: number;
+  totalEmpleados: number;
+  totalDuenios: number;
 };
 
-export function AdminSummary({ duenios, empresas }: AdminSummaryProps) {
-  const activeCompanies = empresas.filter((empresa) => empresa.activo).length;
-  const assignedCompanyIds = new Set(duenios.map((duenio) => duenio.empresaId));
-
+export function AdminSummary({
+  totalEmpresas,
+  empresasActivas,
+  empresasInactivas,
+  totalProyectos,
+  proyectosEnCurso,
+  totalEmpleados,
+  totalDuenios,
+}: AdminSummaryProps) {
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
       <SummaryTile
         icon={<Building2 className="size-5" />}
-        label="Empresas"
+        label="Total Empresas"
         tone="teal"
-        value={empresas.length}
+        value={totalEmpresas}
+      />
+      <SummaryTile
+        icon={<Building2 className="size-5" />}
+        label="Empresas Activas"
+        tone="teal"
+        value={empresasActivas}
+      />
+      <SummaryTile
+        icon={<Building2 className="size-5" />}
+        label="Empresas Inactivas"
+        tone="slate"
+        value={empresasInactivas}
       />
       <SummaryTile
         icon={<UserRound className="size-5" />}
-        label="Owners"
+        label="Total Owners"
         tone="amber"
-        value={duenios.length}
+        value={totalDuenios}
       />
       <SummaryTile
         icon={<UsersRound className="size-5" />}
-        label="Empresas activas"
+        label="Proyectos Activos"
         tone="slate"
-        value={`${activeCompanies}/${assignedCompanyIds.size}`}
+        value={totalProyectos}
+      />
+      <SummaryTile
+        icon={<UsersRound className="size-5" />}
+        label="Proyectos en Curso"
+        tone="amber"
+        value={proyectosEnCurso}
       />
     </div>
   );

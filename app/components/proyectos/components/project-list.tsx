@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, FolderKanban, Pencil, Play, Trash2, UsersRound } from "lucide-react";
+import { FileSpreadsheet, FileText, Flag, FolderKanban, Pencil, Play, Trash2, UsersRound } from "lucide-react";
 import type { Project, ProjectLifecycleAction } from "../types/project";
 import { formatProjectDate, formatProjectStatus } from "../utils/project-format";
 import { Button } from "../../ui/button";
@@ -15,6 +15,8 @@ type ProjectListProps = {
   onEdit: (project: Project) => void;
   onLifecycleAction: (project: Project, action: ProjectLifecycleAction) => void;
   onManageEmployees: (project: Project) => void;
+  onExportExcel?: (project: Project) => void;
+  onExportPdf?: (project: Project) => void;
   projects: Project[];
 };
 
@@ -26,6 +28,8 @@ export function ProjectList({
   onEdit,
   onLifecycleAction,
   onManageEmployees,
+  onExportExcel,
+  onExportPdf,
   projects,
 }: ProjectListProps) {
   return (
@@ -100,7 +104,23 @@ export function ProjectList({
                     </td>
                     <td className="py-3 text-right">
                       {canManageProjects ? (
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end flex-wrap gap-2">
+                          <Button
+                            aria-label={`Exportar PDF de ${project.nombre}`}
+                            icon={<FileText className="size-4" />}
+                            onClick={() => onExportPdf?.(project)}
+                            variant="secondary"
+                          >
+                            PDF
+                          </Button>
+                          <Button
+                            aria-label={`Exportar Excel de ${project.nombre}`}
+                            icon={<FileSpreadsheet className="size-4" />}
+                            onClick={() => onExportExcel?.(project)}
+                            variant="secondary"
+                          >
+                            Excel
+                          </Button>
                           {!project.fechaInicioReal ? (
                             <Button
                               icon={<Play className="size-4" />}

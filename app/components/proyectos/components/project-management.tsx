@@ -3,6 +3,7 @@
 import { Plus, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { usePlatformAuth } from "../../platform/platform-auth-context";
+import { reportesApi } from "../../../lib/api";
 import { ModulePage } from "../../platform/module-page";
 import { Button } from "../../ui/button";
 import { ConfirmModal } from "../../ui/confirm-modal";
@@ -71,6 +72,22 @@ export function ProjectManagement() {
     return leaderOptions.filter((option) => !assignedEmployeeIds.has(option.value));
   }, [leaderOptions, projectAssignments]);
 
+  async function handleExportExcel(project: any) {
+    try {
+      await reportesApi.exportarProyectoExcel(project.id, session.accessToken);
+    } catch (err: any) {
+      alert("Error al descargar reporte de Excel: " + err.message);
+    }
+  }
+
+  async function handleExportPdf(project: any) {
+    try {
+      await reportesApi.exportarProyectoPdf(project.id, session.accessToken);
+    } catch (err: any) {
+      alert("Error al descargar reporte de PDF: " + err.message);
+    }
+  }
+
   return (
     <>
       <ToastMessage
@@ -127,6 +144,8 @@ export function ProjectManagement() {
             onEdit={openEditModal}
             onLifecycleAction={openLifecycleModal}
             onManageEmployees={openAssignmentsModal}
+            onExportExcel={handleExportExcel}
+            onExportPdf={handleExportPdf}
             projects={projects}
           />
         </div>
