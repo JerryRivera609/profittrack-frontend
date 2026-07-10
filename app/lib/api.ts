@@ -139,6 +139,97 @@ export async function apiRequest<T>(
   return JSON.parse(responseText) as T;
 }
 
+export async function downloadFile(
+  path: string,
+  fileName: string,
+  token?: string
+) {
+  const explicitToken = getValidBearerToken(token);
+  const bearerToken = explicitToken ?? getStoredAuthToken();
+  const headers = new Headers({
+    accept: "*/*",
+  });
+  if (bearerToken) {
+    headers.set("Authorization", `Bearer ${bearerToken}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: "no-store",
+    headers,
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    const detail = getResponseErrorDetail(text);
+    throw new ApiRequestError(response.status, `Error al descargar archivo: ${detail}`);
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export const adminApi = {
+  listarEmpresas: (token?: string) =>
+    apiRequest<Empresa[]>("/api/admin/empresas", { token }),
+  obtenerEmpresa: (id: number, token?: string) =>
+    apiRequest<Empresa>(`/api/admin/empresas/${id}`, { token }),
+  crearEmpresa: (payload: EmpresaPayload, token?: string) =>
+    apiRequest<Empresa>("/api/admin/empresas", {
+      body: payload,
+      method: "POST",
+      token,
+    }),
+  actualizarEmpresa: (id: number, payload: EmpresaPayload, token?: string) =>
+    apiRequest<Empresa>(`/api/admin/empresas/${id}`, {
+      body: payload,
+      method: "PATCH",
+      token,
+    }),
+  eliminarEmpresa: (id: number, token?: string) =>
+    apiRequest<void>(`/api/admin/empresas/${id}`, {
+      method: "DELETE",
+      token,
+    }),
+  cambiarEstadoEmpresa: (id: number, activo: boolean, token?: string) =>
+    apiRequest<Empresa>(`/api/admin/empresas/${id}/estado?activo=${activo}`, {
+      method: "PATCH",
+      token,
+    }),
+  listarEmpleados: (empresaId: number, token?: string) =>
+    apiRequest<any[]>(`/api/admin/empresas/${empresaId}/empleados`, { token }),
+  crearEmpleado: (empresaId: number, payload: any, token?: string) =>
+    apiRequest<any>(`/api/admin/empresas/${empresaId}/empleados`, {
+      body: payload,
+      method: "POST",
+      token,
+    }),
+  listarProyectos: (empresaId: number, token?: string) =>
+    apiRequest<any[]>(`/api/admin/empresas/${empresaId}/proyectos`, { token }),
+  listarRoles: (empresaId: number, token?: string) =>
+    apiRequest<any[]>(`/api/admin/empresas/${empresaId}/roles`, { token }),
+  obtenerEstadisticas: (token?: string) =>
+    apiRequest<Record<string, number>>("/api/admin/estadisticas", { token }),
+  obtenerPerfil: (token?: string) =>
+    apiRequest<Record<string, any>>("/api/admin/perfil", { token }),
+};
+
+export const reportesApi = {
+  exportarProyectoExcel: (proyectoId: number, token?: string) =>
+    downloadFile(`/api/reportes/proyecto/${proyectoId}/excel`, `reporte_proyecto_${proyectoId}.xlsx`, token),
+  exportarProyectoPdf: (proyectoId: number, token?: string) =>
+    downloadFile(`/api/reportes/proyecto/${proyectoId}/pdf`, `reporte_proyecto_${proyectoId}.pdf`, token),
+};
+
+
 export const empresasApi = {
   list: (token?: string) => apiRequest<Empresa[]>("/api/empresas", { token }),
   get: (id: number, token?: string) =>

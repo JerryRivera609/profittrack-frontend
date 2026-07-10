@@ -31,7 +31,7 @@ export const roleLabels: Record<UserRole, string> = {
 };
 
 export const roleHome: Record<UserRole, string> = {
-  ADMIN: "/empresas",
+  ADMIN: "/admin/dashboard",
   EMPLEADO: "/proyectos",
   LIDER: "/proyectos",
   OWNER: "/dashboard",
@@ -46,53 +46,67 @@ export const roleLoginPath: Record<UserRole, string> = {
 
 export const navigationItems: NavigationItem[] = [
   {
+    description: "Estadísticas globales, rendimiento de servidores y autoescalado.",
+    href: "/admin/dashboard",
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    roles: ["ADMIN"],
+  },
+  {
     description: "KPIs principales, tareas abiertas y estado operativo.",
     href: "/dashboard",
     icon: LayoutDashboard,
     label: "Dashboard",
-    roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
+    roles: ["OWNER", "LIDER", "EMPLEADO"],
   },
   {
-    description: "Registro de empresas y owners asignados.",
+    description: "Registro de empresas, edición y estado operacional.",
     href: "/empresas",
     icon: Building2,
     label: "Empresas",
     roles: ["ADMIN", "OWNER"],
   },
   {
+    description: "Administración global de usuarios y personal asignado.",
+    href: "/admin/usuarios",
+    icon: UsersRound,
+    label: "Usuarios",
+    roles: ["ADMIN"],
+  },
+  {
     description: "Equipo, cargos, contratos y estado laboral.",
     href: "/empleados",
     icon: UsersRound,
     label: "Empleados",
-    roles: ["ADMIN", "OWNER"],
+    roles: ["OWNER"],
   },
   {
     description: "Clientes, contactos, contratos y cartera activa.",
     href: "/clientes",
     icon: BriefcaseBusiness,
     label: "Clientes",
-    roles: ["ADMIN", "OWNER"],
+    roles: ["OWNER"],
   },
   {
     description: "Proyectos, lideres, presupuestos y avance.",
     href: "/proyectos",
     icon: FolderKanban,
     label: "Proyectos",
-    roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
+    roles: ["OWNER", "LIDER", "EMPLEADO"],
   },
   {
     description: "Etapas por proyecto, horas, fechas y estado operativo.",
     href: "/etapas",
     icon: ListChecks,
     label: "Etapas",
-    roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
+    roles: ["OWNER", "LIDER", "EMPLEADO"],
   },
   {
     description: "Tablero de tareas, prioridades y responsables.",
     href: "/tareas",
     icon: ClipboardCheck,
     label: "Tareas",
-    roles: ["ADMIN", "OWNER", "LIDER", "EMPLEADO"],
+    roles: ["OWNER", "LIDER", "EMPLEADO"],
   },
   {
     description: "Registro de tiempo trabajado por tarea y aprobacion del lider.",
@@ -106,21 +120,21 @@ export const navigationItems: NavigationItem[] = [
     href: "/finanzas",
     icon: LineChart,
     label: "Finanzas",
-    roles: ["ADMIN", "OWNER"],
+    roles: ["OWNER"],
   },
   {
     description: "Planillas, pagos, descuentos y cierres mensuales.",
     href: "/planillas",
     icon: ReceiptText,
     label: "Planillas",
-    roles: ["ADMIN", "OWNER"],
+    roles: ["OWNER"],
   },
   {
     description: "Roles, permisos, integraciones y parametros.",
     href: "/configuracion",
     icon: Settings,
     label: "Configuracion",
-    roles: ["ADMIN", "OWNER"],
+    roles: ["OWNER"],
   },
 ];
 
