@@ -205,6 +205,15 @@ export function normalizeBackendRole(
   const normalizedRole = backendRole?.trim().toLowerCase();
   const normalizedType = backendType?.trim().toLowerCase();
 
+  if (
+    normalizedRole === "administrador" ||
+    normalizedRole === "admin" ||
+    normalizedType === "administrador" ||
+    normalizedType === "admin"
+  ) {
+    return "ADMIN";
+  }
+
   if (normalizedRole === "owner") {
     return "OWNER";
   }

@@ -1,4 +1,4 @@
-import { Building2, Pencil, Trash2 } from "lucide-react";
+import { Building2, Pencil, Power } from "lucide-react";
 import type { Empresa } from "../../types/domain";
 import { Button } from "../ui/button";
 import { EmptyState } from "../ui/empty-state";
@@ -7,8 +7,10 @@ import { Panel } from "../ui/panel";
 type CompanyTableProps = {
   empresas: Empresa[];
   isLoading: boolean;
-  onDelete: (empresa: Empresa) => void;
+  onDelete?: (empresa: Empresa) => void;
   onEdit: (empresa: Empresa) => void;
+  onToggleStatus: (empresa: Empresa) => void;
+  onSelect?: (empresa: Empresa) => void;
 };
 
 export function CompanyTable({
@@ -16,6 +18,8 @@ export function CompanyTable({
   isLoading,
   onDelete,
   onEdit,
+  onToggleStatus,
+  onSelect,
 }: CompanyTableProps) {
   return (
     <Panel>
@@ -66,12 +70,33 @@ export function CompanyTable({
                     <p className="text-xs">{empresa.telefono}</p>
                   </td>
                   <td className="py-3 pr-4">
-                    <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                    <span className={`rounded-md px-2 py-1 text-xs font-semibold ${
+                      empresa.activo 
+                        ? "bg-emerald-50 text-emerald-700" 
+                        : "bg-rose-50 text-rose-700"
+                    }`}>
                       {empresa.activo ? "Activa" : "Inactiva"}
                     </span>
                   </td>
                   <td className="py-3">
                     <div className="flex justify-end gap-2">
+                      {onSelect && (
+                        <Button
+                          aria-label={`Gestionar ${empresa.nombre}`}
+                          onClick={() => onSelect(empresa)}
+                          variant="primary"
+                        >
+                          Gestionar
+                        </Button>
+                      )}
+                      <Button
+                        aria-label={`${empresa.activo ? "Desactivar" : "Activar"} ${empresa.nombre}`}
+                        icon={<Power className="size-4" />}
+                        onClick={() => onToggleStatus(empresa)}
+                        variant={empresa.activo ? "danger" : "primary"}
+                      >
+                        {empresa.activo ? "Desactivar" : "Activar"}
+                      </Button>
                       <Button
                         aria-label={`Editar ${empresa.nombre}`}
                         icon={<Pencil className="size-4" />}
@@ -79,14 +104,6 @@ export function CompanyTable({
                         variant="secondary"
                       >
                         Editar
-                      </Button>
-                      <Button
-                        aria-label={`Eliminar ${empresa.nombre}`}
-                        icon={<Trash2 className="size-4" />}
-                        onClick={() => onDelete(empresa)}
-                        variant="danger"
-                      >
-                        Eliminar
                       </Button>
                     </div>
                   </td>
