@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, FileDown } from "lucide-react";
 import { useMemo } from "react";
 import { usePlatformAuth } from "../../platform/platform-auth-context";
 import { reportesApi } from "../../../lib/api";
@@ -88,6 +88,14 @@ export function ProjectManagement() {
     }
   }
 
+  async function handleExportConsolidated() {
+    try {
+      await reportesApi.exportarConsolidadoEmpresaPdf(session.accessToken);
+    } catch (err: any) {
+      alert("Error al descargar reporte consolidado: " + err.message);
+    }
+  }
+
   return (
     <>
       <ToastMessage
@@ -101,6 +109,15 @@ export function ProjectManagement() {
             {canCreateProjects ? (
               <Button icon={<Plus className="size-4" />} onClick={openCreateModal}>
                 Nuevo proyecto
+              </Button>
+            ) : null}
+            {canManageProjects ? (
+              <Button
+                icon={<FileDown className="size-4" />}
+                onClick={handleExportConsolidated}
+                variant="secondary"
+              >
+                Reporte Consolidado (PDF)
               </Button>
             ) : null}
             <Button
