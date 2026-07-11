@@ -227,6 +227,8 @@ export const reportesApi = {
     downloadFile(`/api/reportes/proyecto/${proyectoId}/excel`, `reporte_proyecto_${proyectoId}.xlsx`, token),
   exportarProyectoPdf: (proyectoId: number, token?: string) =>
     downloadFile(`/api/reportes/proyecto/${proyectoId}/pdf`, `reporte_proyecto_${proyectoId}.pdf`, token),
+  exportarConsolidadoEmpresaPdf: (token?: string) =>
+    downloadFile(`/api/reportes/empresa/consolidado/pdf`, `reporte_consolidado_empresa.pdf`, token),
 };
 
 
