@@ -210,7 +210,18 @@ export function OwnerCompanyFinance() {
               icon={<Activity className="size-4" />}
               label="Presupuesto consumido"
               value={formatPercent(budgetConsumption)}
-            />
+            >
+              {budgetConsumption !== undefined && (
+                <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-1.5 rounded-full transition-all duration-700 ease-in-out ${
+                      budgetConsumption > 90 ? 'bg-rose-500' : 'bg-indigo-500'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(0, budgetConsumption))}%` }}
+                  />
+                </div>
+              )}
+            </MetricLine>
             <MetricLine
               icon={<AlertTriangle className="size-4" />}
               label="Riesgo"
@@ -312,10 +323,12 @@ function MetricLine({
   icon,
   label,
   value,
+  children,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
+  children?: ReactNode;
 }) {
   return (
     <div className="min-w-0 border-t border-slate-100 pt-3">
@@ -326,6 +339,7 @@ function MetricLine({
       <p className="mt-1 truncate text-xl font-semibold text-slate-950">
         {value}
       </p>
+      {children}
     </div>
   );
 }

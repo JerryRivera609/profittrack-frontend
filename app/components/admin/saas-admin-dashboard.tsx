@@ -71,6 +71,67 @@ export function SaaSAdminDashboard() {
     void loadStatsAndMetrics();
   }, [loadStatsAndMetrics]);
 
+  useEffect(() => {
+    let socket: WebSocket | null = null;
+    let reconnectTimeout: any = null;
+    let isMounted = true;
+
+    function connect() {
+      if (!isMounted) return;
+      try {
+        const wsProtocol = API_BASE_URL.startsWith("https") ? "wss" : "ws";
+        const wsUrl = `${API_BASE_URL.replace(/^https?:\/\//, `${wsProtocol}://`)}/ws/metrics`;
+        
+        socket = new WebSocket(wsUrl);
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data && isMounted) {
+              setMetrics({
+                cpuLoad: data.cpuLoad ?? 12.5,
+                memoryUsed: data.memoryUsed ?? 180.0,
+                memoryTotal: data.memoryTotal ?? 512.0,
+                memoryPercentage: data.memoryPercentage ?? 35.0,
+                nodeIdentifier: data.nodeIdentifier ?? "Nodo-Default",
+              });
+            }
+          } catch (err) {
+            console.error("Error parsing metrics from WS:", err);
+          }
+        };
+
+        socket.onclose = () => {
+          if (isMounted) {
+            reconnectTimeout = setTimeout(connect, 3000);
+          }
+        };
+
+        socket.onerror = (err) => {
+          console.error("WebSocket metrics error:", err);
+          socket?.close();
+        };
+      } catch (err) {
+        console.error("Failed to connect to metrics WebSocket:", err);
+        if (isMounted) {
+          reconnectTimeout = setTimeout(connect, 3000);
+        }
+      }
+    }
+
+    connect();
+
+    return () => {
+      isMounted = false;
+      if (socket) {
+        socket.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
