@@ -6,7 +6,7 @@ import { projectService } from "../../proyectos/services/project-service";
 import type { Project, ProjectCatalogOption } from "../../proyectos/types/project";
 import { ownerDashboardService } from "../services/owner-dashboard-service";
 import type { OwnerProjectDashboard } from "../types/owner-dashboard";
-import { API_BASE_URL } from "../../lib/api";
+import { API_BASE_URL } from "../../../lib/api";
 
 export function useOwnerProjectDashboard(session: Session) {
   const canUseOwnerDashboard = session.role === "OWNER" || session.role === "ADMIN";

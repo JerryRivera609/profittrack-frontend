@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "../../../types/domain";
 import { ownerDashboardService } from "../services/owner-dashboard-service";
 import type { OwnerCompanyFinanceDashboard } from "../types/owner-dashboard";
-import { API_BASE_URL } from "../../lib/api";
+import { API_BASE_URL } from "../../../lib/api";
 
 export function useOwnerCompanyFinance(session: Session) {
   const canUseOwnerDashboard = session.role === "OWNER" || session.role === "ADMIN";
